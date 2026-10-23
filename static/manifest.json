@@ -1,0 +1,14 @@
+{
+  "name": "FloraTrack",
+  "short_name": "FloraTrack",
+  "description": "Identify plants from a photo and track your plant store's stock.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F6FBF4",
+  "theme_color": "#2E7D32",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/static/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/static/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

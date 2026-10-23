@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>FloraTrack</title>
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#173F27">
+<link rel="apple-touch-icon" href="/static/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Layout: one phone-width column; deep "canopy" headers over a pale mist page;
+     plants without photos get a generated potted-plant illustration. */
+  :root{
+    --canopy:#173F27; --canopy-2:#1F5132; --leaf:#2E7D32; --leaf-2:#3E9142; --sprout:#B5E06C;
+    --mist:#EEF4EC; --paper:#F7FAF5; --white:#FFFFFF; --ink:#18241B; --muted:#5E6D61; --line:#DCE6D8;
+    --amber:#A86400; --amber-bg:#FFF0D2; --red:#C2362B; --red-bg:#FCE6E3; --violet:#6A4FBF; --violet-bg:#EEEAFB; --sky:#1F6FB2; --sky-bg:#E5F0FA;
+    --display:'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+    --body:'Figtree', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --r-lg:22px; --r-md:16px; --r-sm:12px;
+    --shadow:0 1px 2px rgba(23,63,39,.06), 0 6px 18px rgba(23,63,39,.07);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; min-height:100%;}
+  body{background:#DDE7DA; color:var(--ink); font-family:var(--body); font-size:15px; line-height:1.45; display:flex; justify-content:center;}
+  button,input,select,textarea{font:inherit; color:inherit;}
+  button{cursor:pointer;}
+  :focus-visible{outline:3px solid var(--sprout); outline-offset:2px;}
+  .app{width:100%; max-width:480px; min-height:100vh; background:var(--paper); position:relative;}
+  .screen{padding-bottom:104px; animation:enter .18s ease-out;}
+  .screen.no-nav{padding-bottom:28px;}
+  @keyframes enter{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+  .pad{padding:18px 16px; display:flex; flex-direction:column; gap:16px;}
+  svg.i{width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; flex:none;}
+  svg.i.sm{width:18px; height:18px;} svg.i.lg{width:28px; height:28px;}
+  h1,h2,h3,.display{font-family:var(--display); letter-spacing:-.01em; margin:0;}
+  .sub{color:var(--muted); font-size:13px;}
+  .num{font-family:var(--display); font-variant-numeric:tabular-nums;}
+
+  /* headers */
+  .topbar{position:sticky; top:0; z-index:5; background:rgba(247,250,245,.92); backdrop-filter:blur(10px); display:flex; align-items:center; gap:8px; padding:calc(10px + env(safe-area-inset-top)) 10px 10px; border-bottom:1px solid var(--line);}
+  .topbar h1{flex:1; text-align:center; font-size:18px; font-weight:700;}
+  .icon-btn{background:none; border:0; width:42px; height:42px; border-radius:var(--r-sm); display:grid; place-items:center; color:inherit;}
+  .icon-btn:active{background:rgba(0,0,0,.06);}
+  .canopy{position:relative; overflow:hidden; background:var(--canopy); color:#fff; border-radius:0 0 30px 30px; padding:calc(12px + env(safe-area-inset-top)) 16px 20px;}
+  .canopy > *{position:relative;}
+  .canopy .leaves{position:absolute; inset:0; width:100%; height:100%; pointer-events:none;}
+  .canopy .row{display:flex; align-items:center; gap:10px;}
+  .canopy .icon-btn{color:#fff;}
+  .greet{font-family:var(--display); font-size:26px; font-weight:700; line-height:1.15; margin:10px 0 2px;}
+  .avatar{width:42px; height:42px; border-radius:50%; background:var(--sprout); color:var(--canopy); display:grid; place-items:center; font-family:var(--display); font-weight:800; border:0;}
+  .search{display:flex; align-items:center; gap:10px; background:var(--white); color:var(--muted); border-radius:var(--r-md); padding:0 14px; height:50px; border:1px solid var(--line); min-width:0;}
+  .search input{border:0; outline:0; flex:1; background:transparent; color:var(--ink); min-width:0;}
+  .canopy .search{border:0; box-shadow:0 6px 20px rgba(0,0,0,.18);}
+
+  /* stock health bar */
+  .health{background:rgba(255,255,255,.1); border-radius:var(--r-md); padding:12px 14px; display:flex; flex-direction:column; gap:8px;}
+  .health-bar{display:flex; height:10px; border-radius:6px; overflow:hidden; background:rgba(255,255,255,.15); gap:2px;}
+  .health-bar i{display:block; height:100%;}
+  .legend{display:flex; gap:14px; font-size:12.5px; flex-wrap:wrap;}
+  .legend span{display:flex; align-items:center; gap:6px;}
+  .legend b{font-family:var(--display);}
+  .dot{width:9px; height:9px; border-radius:50%; display:inline-block;}
+
+  /* cards */
+  .card{background:var(--white); border-radius:var(--r-lg); padding:16px; box-shadow:var(--shadow);}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+  .stat{display:flex; flex-direction:column; gap:10px; padding:14px;}
+  .stat .ic{width:40px; height:40px; border-radius:var(--r-sm); display:grid; place-items:center;}
+  .stat small{color:var(--muted); font-size:12.5px;}
+  .stat b{font-family:var(--display); font-size:22px; font-weight:700; line-height:1;}
+  .section-h{display:flex; align-items:baseline; justify-content:space-between; gap:10px;}
+  .section-h h2{font-size:18px; font-weight:700;}
+  .link{background:none; border:0; color:var(--leaf); font-weight:600; padding:0; font-size:14px;}
+
+  /* scan hero card */
+  .scan-card{position:relative; overflow:hidden; border:0; border-radius:var(--r-lg); background:linear-gradient(135deg,var(--leaf) 0%, var(--canopy-2) 100%); color:#fff; padding:18px; display:flex; align-items:center; gap:16px; text-align:left; box-shadow:0 10px 24px rgba(46,125,50,.28);}
+  .scan-card .lens{width:64px; height:64px; border-radius:50%; border:3px solid var(--sprout); display:grid; place-items:center; flex:none; background:rgba(255,255,255,.08);}
+  .scan-card h3{font-size:20px;}
+  .scan-card p{margin:2px 0 0; font-size:13.5px; opacity:.85;}
+  .tile{border:0; border-radius:var(--r-lg); padding:14px 8px; display:flex; flex-direction:column; align-items:center; gap:6px; background:var(--white); color:var(--ink); font-weight:600; font-size:13.5px; box-shadow:var(--shadow);}
+  .tile .ic{width:44px; height:44px; border-radius:14px; display:grid; place-items:center;}
+
+  /* sparkline */
+  .spark{display:flex; align-items:flex-end; gap:6px; height:64px;}
+  .spark div{flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%; justify-content:flex-end;}
+  .spark i{width:100%; border-radius:6px 6px 3px 3px; background:var(--mint, #CFE6CB); min-height:4px;}
+  .spark div.today i{background:var(--leaf);}
+  .spark span{font-size:10.5px; color:var(--muted);}
+
+  /* horizontal restock scroller */
+  .hscroll{display:flex; gap:12px; overflow-x:auto; padding:2px 16px 8px; margin:0 -16px; scroll-snap-type:x mandatory;}
+  .mini{flex:0 0 150px; scroll-snap-align:start; border:0; background:var(--white); border-radius:var(--r-lg); padding:10px; text-align:left; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:8px;}
+  .mini .art{width:100%; aspect-ratio:1.25; border-radius:14px;}
+  .mini b{font-size:14px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+
+  /* plant art + photos */
+  .art{background:var(--mist) center/cover no-repeat; border-radius:var(--r-sm); overflow:hidden; flex:none; display:block;}
+  .art svg{width:100%; height:100%; display:block;}
+  .art.s56{width:56px; height:56px;} .art.big{width:120px; height:120px; border-radius:14px;} .art.s64{width:64px; height:64px;} .art.s44{width:44px; height:44px; border-radius:10px;}
+
+  /* activity timeline */
+  .feed{display:flex; flex-direction:column;}
+  .feed .it{display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--line);}
+  .feed .it:last-child{border-bottom:0;}
+  .feed .t{flex:1; min-width:0;}
+  .feed .t div:first-child{font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .amt{font-family:var(--display); font-weight:700; white-space:nowrap;}
+  .amt.pos{color:var(--leaf);} .amt.neg{color:var(--red);}
+
+  /* inventory rows */
+  .list{display:flex; flex-direction:column; gap:10px;}
+  .row-item{display:flex; align-items:center; gap:12px; background:var(--white); border:0; border-radius:var(--r-lg); padding:10px 12px 10px 10px; width:100%; text-align:left; box-shadow:var(--shadow);}
+  .row-item .t{flex:1; min-width:0; display:flex; flex-direction:column; gap:3px;}
+  .row-item .name{font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .meter{height:6px; background:var(--mist); border-radius:4px; overflow:hidden;}
+  .meter i{display:block; height:100%; border-radius:4px;}
+  .qty-col{text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:2px;}
+  .qty-col b{font-family:var(--display); font-size:22px; line-height:1;}
+  .price{color:var(--leaf); font-weight:700;}
+  .tag{display:inline-flex; align-items:center; gap:4px; font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:20px; white-space:nowrap;}
+  .tag.ok{background:#E3F1E0; color:var(--leaf);} .tag.low{background:var(--amber-bg); color:var(--amber);} .tag.out{background:var(--red-bg); color:var(--red);}
+  .tag.why{background:var(--violet-bg); color:var(--violet);}
+  .chips{display:flex; gap:8px; overflow-x:auto; padding-bottom:2px;}
+  .chip{border:1px solid var(--line); background:var(--white); border-radius:20px; padding:8px 14px; font-size:13.5px; font-weight:600; white-space:nowrap; display:inline-flex; gap:6px; align-items:center;}
+  .chip.on{background:var(--canopy); border-color:var(--canopy); color:#fff;}
+  .chip .n{font-size:11px; background:rgba(0,0,0,.08); border-radius:10px; padding:1px 7px;}
+  .chip.on .n{background:rgba(255,255,255,.2);}
+  .fab{position:fixed; right:max(16px, calc(50% - 240px + 16px)); bottom:104px; height:56px; padding:0 20px 0 16px; border-radius:28px; border:0; background:var(--leaf); color:#fff; display:flex; align-items:center; gap:8px; font-weight:700; box-shadow:0 8px 20px rgba(46,125,50,.35); z-index:6;}
+
+  /* buttons + forms */
+  .btn{border:0; border-radius:var(--r-md); padding:15px; background:var(--leaf); color:#fff; font-weight:700; width:100%; display:flex; align-items:center; justify-content:center; gap:8px;}
+  .btn.dark{background:var(--canopy);}
+  .btn.ghost{background:transparent; color:var(--leaf); box-shadow:inset 0 0 0 1.5px var(--leaf);}
+  .btn.soft{background:#E3F1E0; color:var(--canopy);}
+  .btn.danger{background:transparent; color:var(--red); box-shadow:inset 0 0 0 1.5px #E9B7B1;}
+  .btn:disabled{opacity:.45;}
+  .btn-row{display:flex; gap:10px;} .btn-row .btn{flex:1;}
+  .group{background:var(--white); border-radius:var(--r-lg); padding:16px; display:flex; flex-direction:column; gap:14px; box-shadow:var(--shadow);}
+  .group h3{font-size:16px;}
+  label.f{display:flex; flex-direction:column; gap:6px; font-size:13px; font-weight:600; color:var(--muted);}
+  label.f .hint{font-weight:400;}
+  .input{width:100%; border:1.5px solid var(--line); border-radius:var(--r-sm); padding:12px; background:var(--paper); color:var(--ink); outline:none; font-weight:500;}
+  .input:focus{border-color:var(--leaf); background:var(--white);}
+  .input:disabled{opacity:.6;}
+  textarea.input{min-height:90px; resize:vertical;}
+  .err{background:var(--red-bg); color:var(--red); border-radius:var(--r-sm); padding:11px 13px; font-size:13.5px; font-weight:500;}
+  .info{background:#E3F1E0; color:var(--canopy); border-radius:var(--r-sm); padding:12px 14px; font-size:14px;}
+  .warn{background:var(--amber-bg); color:#6E4300; border-radius:var(--r-sm); padding:12px 14px; font-size:14px;}
+
+  /* bottom nav with raised scan */
+  .nav{position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:480px; background:var(--white); box-shadow:0 -6px 24px rgba(23,63,39,.08); display:flex; align-items:flex-end; padding:8px 8px calc(8px + env(safe-area-inset-bottom)); z-index:7; border-radius:22px 22px 0 0;}
+  .nav button{flex:1; background:none; border:0; display:flex; flex-direction:column; align-items:center; gap:3px; font-size:11.5px; font-weight:600; color:var(--muted); padding:6px 0;}
+  .nav button.on{color:var(--leaf);}
+  .nav button.on svg{stroke-width:2.3;}
+  .nav .scan-btn{position:relative; top:-18px;}
+  .nav .scan-btn .ring{width:62px; height:62px; border-radius:50%; background:var(--leaf); color:#fff; display:grid; place-items:center; box-shadow:0 0 0 5px var(--white), 0 8px 18px rgba(46,125,50,.4);}
+  .nav .scan-btn.on .ring{background:var(--canopy);}
+  .nav .scan-btn span{margin-top:2px;}
+
+  /* scanner */
+  .scanner{background:#0C1A10; min-height:100vh; color:#fff; display:flex; flex-direction:column;}
+  .scanner .topbar{background:transparent; border:0; color:#fff; backdrop-filter:none;}
+  .viewfinder{position:relative; flex:1; min-height:400px; margin:0 14px; border-radius:28px; background:#000; overflow:hidden;}
+  .viewfinder video{width:100%; height:100%; object-fit:cover; position:absolute; inset:0;}
+  .frame{position:absolute; inset:16% 12%; pointer-events:none;}
+  .frame i{position:absolute; width:40px; height:40px; border:4px solid var(--sprout);}
+  .frame i:nth-child(1){top:0; left:0; border-right:0; border-bottom:0; border-radius:14px 0 0 0;}
+  .frame i:nth-child(2){top:0; right:0; border-left:0; border-bottom:0; border-radius:0 14px 0 0;}
+  .frame i:nth-child(3){bottom:0; left:0; border-right:0; border-top:0; border-radius:0 0 0 14px;}
+  .frame i:nth-child(4){bottom:0; right:0; border-left:0; border-top:0; border-radius:0 0 14px 0;}
+  .vf-msg{position:absolute; inset:0; display:grid; place-items:center; padding:24px; text-align:center; color:rgba(255,255,255,.75);}
+  .shutter-row{display:flex; align-items:center; justify-content:space-around; padding:18px 16px 6px;}
+  .shutter{width:80px; height:80px; border-radius:50%; border:5px solid #fff; background:var(--leaf); box-shadow:0 0 0 4px rgba(181,224,108,.35);}
+  .shutter:disabled{opacity:.5;}
+  .round{width:52px; height:52px; border-radius:50%; border:0; background:rgba(255,255,255,.12); color:#fff; display:grid; place-items:center;}
+  .organs{display:flex; gap:6px; justify-content:center; flex-wrap:wrap; padding:14px 16px 0;}
+  .organs .chip{background:transparent; color:#fff; border-color:rgba(255,255,255,.3);}
+  .organs .chip.on{background:var(--sprout); color:var(--canopy); border-color:var(--sprout);}
+
+  /* result hero */
+  .photo-hero{position:relative; height:300px; background:#0C1A10 center/cover no-repeat; color:#fff; display:flex; flex-direction:column; justify-content:space-between; border-radius:0 0 30px 30px; overflow:hidden;}
+  .photo-hero::after{content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,0) 30%, rgba(8,30,15,.85) 100%);}
+  .photo-hero > *{position:relative; z-index:1;}
+  .photo-hero .bar-top{display:flex; justify-content:space-between; padding:calc(10px + env(safe-area-inset-top)) 10px 0;}
+  .photo-hero .bar-top .icon-btn{color:#fff; background:rgba(0,0,0,.25); backdrop-filter:blur(6px);}
+  .photo-hero .caption{padding:0 18px 20px; display:flex; align-items:flex-end; gap:14px;}
+  .photo-hero h1{font-size:28px; font-weight:800; line-height:1.1;}
+  .photo-hero .sci{font-style:italic; opacity:.85;}
+  .ring-conf{flex:none; width:68px; height:68px; position:relative;}
+  .ring-conf svg{width:100%; height:100%; transform:rotate(-90deg);}
+  .ring-conf b{position:absolute; inset:0; display:grid; place-items:center; font-family:var(--display); font-size:17px;}
+  .scanline{position:absolute; left:0; right:0; height:3px; background:var(--sprout); box-shadow:0 0 18px 4px rgba(181,224,108,.7); top:10%; animation:sweep 1.4s ease-in-out infinite alternate; z-index:2;}
+  @keyframes sweep{to{top:85%}}
+  .stock-card{display:flex; gap:12px; align-items:center; background:var(--white); border:0; border-radius:var(--r-lg); padding:12px; box-shadow:var(--shadow); width:100%; text-align:left;}
+  .stock-card.match{box-shadow:inset 0 0 0 2px var(--leaf), var(--shadow);}
+  .stock-big{font-family:var(--display); font-size:34px; font-weight:800; line-height:1;}
+  .facts{display:grid; grid-template-columns:repeat(2,1fr); gap:10px;}
+  .fact{background:var(--mist); border-radius:var(--r-sm); padding:10px 12px;}
+  .fact small{display:block; color:var(--muted); font-size:12px;}
+  .fact b{font-weight:600;}
+
+  /* details banner */
+  .banner{position:relative; height:240px; overflow:hidden; border-radius:0 0 30px 30px; background:var(--mist);}
+  .banner .art{position:absolute; inset:0; width:100%; height:100%; border-radius:0;}
+  .banner::after{content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,0) 35%);}
+  .banner .bar-top{position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between; padding:calc(10px + env(safe-area-inset-top)) 10px 0; z-index:2;}
+  .banner .icon-btn{background:rgba(255,255,255,.85); color:var(--ink); backdrop-filter:blur(6px);}
+  .sheet-card{margin:-34px 16px 0; position:relative; z-index:3;}
+  .kv{display:grid; grid-template-columns:auto 1fr; gap:10px 16px; font-size:14.5px;}
+  .kv span:nth-child(odd){color:var(--muted);}
+  .history{display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--line);}
+  .history:last-child{border-bottom:0;}
+  .history .q{width:46px; height:32px; border-radius:10px; display:grid; place-items:center; font-family:var(--display); font-weight:700; font-size:14px;}
+
+  /* sale */
+  .qty{display:flex; align-items:center; gap:4px; background:var(--mist); border-radius:14px; padding:4px;}
+  .qty button{width:34px; height:34px; border-radius:10px; border:0; background:var(--white); display:grid; place-items:center; box-shadow:0 1px 2px rgba(0,0,0,.08);}
+  .qty b{min-width:26px; text-align:center; font-family:var(--display);}
+  .total-bar{position:fixed; bottom:calc(122px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); width:calc(100% - 24px); max-width:456px; background:var(--canopy); color:#fff; border-radius:var(--r-lg); padding:14px 16px; display:flex; align-items:center; gap:14px; z-index:6; box-shadow:0 10px 26px rgba(23,63,39,.35);}
+  .total-bar .btn{width:auto; padding:13px 18px; background:var(--sprout); color:var(--canopy);}
+
+  /* reports */
+  .tops{display:flex; flex-direction:column; gap:12px;}
+  .tops .r{display:flex; align-items:center; gap:12px;}
+  .tops .r .t{flex:1; min-width:0; display:flex; flex-direction:column; gap:5px;}
+  .tops .r .t span{font-weight:600; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .chart svg{width:100%; height:auto; display:block;}
+
+  /* profile */
+  .profile-head{text-align:center; padding-bottom:26px;}
+  .profile-head .avatar{width:88px; height:88px; font-size:36px; margin:8px auto 10px;}
+  .menu-list{background:var(--white); border-radius:var(--r-lg); overflow:hidden; box-shadow:var(--shadow);}
+  .menu-list button{display:flex; align-items:center; gap:14px; width:100%; padding:16px; background:none; border:0; border-bottom:1px solid var(--line); text-align:left; font-weight:600;}
+  .menu-list button:last-child{border-bottom:0;}
+  .menu-list button > span:not(.ic){flex:1;}
+  .menu-list .ic{width:38px; height:38px; border-radius:12px; display:grid; place-items:center; background:var(--mist); color:var(--leaf);}
+
+  /* drawer, sheets, toast */
+  .drawer-bg{position:fixed; inset:0; background:rgba(8,24,14,.5); z-index:20; display:none;}
+  .drawer-bg.open{display:block;}
+  .drawer{position:absolute; top:0; bottom:0; left:max(0px, calc(50% - 240px)); width:80%; max-width:330px; background:var(--canopy); color:#fff; padding:calc(26px + env(safe-area-inset-top)) 14px 24px; display:flex; flex-direction:column; gap:4px; overflow:hidden; animation:slide .2s ease-out;}
+  @keyframes slide{from{transform:translateX(-30px); opacity:.4} to{transform:none; opacity:1}}
+  .drawer .leaves{position:absolute; right:-40px; bottom:-30px; width:260px; opacity:.5; pointer-events:none;}
+  .drawer .brand{display:flex; align-items:center; gap:12px; margin:0 6px 26px;}
+  .drawer .brand b{font-family:var(--display); font-size:24px;}
+  .drawer button.d{position:relative; display:flex; align-items:center; gap:16px; padding:13px 12px; border:0; background:none; color:#fff; border-radius:14px; font-size:15.5px; font-weight:600; text-align:left;}
+  .drawer button.d.on{background:rgba(181,224,108,.18); color:var(--sprout);}
+  .sheet-bg{position:fixed; inset:0; background:rgba(8,24,14,.5); z-index:30; display:flex; align-items:flex-end; justify-content:center;}
+  .sheet{background:var(--white); width:100%; max-width:480px; border-radius:26px 26px 0 0; padding:10px 18px calc(22px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:14px; max-height:88vh; overflow:auto; animation:up .2s ease-out;}
+  .sheet::before{content:""; width:42px; height:5px; border-radius:3px; background:var(--line); align-self:center;}
+  @keyframes up{from{transform:translateY(30px); opacity:.5} to{transform:none; opacity:1}}
+  .sheet h2{font-size:21px;}
+  .stepper{display:flex; align-items:center; gap:10px; justify-content:center;}
+  .stepper button{width:52px; height:52px; border-radius:16px; border:0; background:var(--mist); display:grid; place-items:center;}
+  .stepper input{width:110px; text-align:center; font-family:var(--display); font-size:30px; font-weight:700; border:0; background:transparent; outline:none;}
+  .toast{position:fixed; left:50%; transform:translateX(-50%); bottom:112px; background:var(--canopy); color:#fff; padding:13px 18px; border-radius:var(--r-md); z-index:40; max-width:min(440px, 92vw); font-size:14px; font-weight:500; display:flex; gap:10px; align-items:center; box-shadow:0 10px 26px rgba(0,0,0,.25); animation:up .2s ease-out;}
+  .toast svg{color:var(--sprout);}
+
+  /* splash + welcome */
+  .splash{min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; background:var(--canopy); color:#fff; position:relative; overflow:hidden;}
+  .splash .leaves{position:absolute; inset:0; width:100%; height:100%;}
+  .splash > *{position:relative;}
+  .wordmark{font-family:var(--display); font-size:46px; font-weight:800; letter-spacing:-.03em;}
+  .loading{width:56%; max-width:220px; height:5px; background:rgba(255,255,255,.15); border-radius:3px; overflow:hidden; margin-top:42px;}
+  .loading i{display:block; height:100%; width:0; background:var(--sprout); border-radius:3px; animation:load 1.1s ease-out forwards;}
+  @keyframes load{to{width:100%}}
+  .welcome-top{background:var(--canopy); color:#fff; border-radius:0 0 34px 34px; padding:calc(40px + env(safe-area-inset-top)) 24px 34px; position:relative; overflow:hidden; text-align:center;}
+  .welcome-top > *{position:relative;}
+  .welcome-top .leaves{position:absolute; inset:0; width:100%; height:100%;}
+  .empty{text-align:center; color:var(--muted); padding:22px 16px; display:flex; flex-direction:column; align-items:center; gap:6px;}
+  .empty .art{width:120px; height:120px; border-radius:50%; margin-bottom:8px;}
+  .empty b{color:var(--ink); font-family:var(--display); font-size:18px;}
+  canvas{display:none;}
+  @media (prefers-reduced-motion:reduce){*{animation:none !important; transition:none !important;}}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div class="drawer-bg" id="drawer-bg"></div>
+<div id="overlay"></div>
+<input type="file" id="pick-gallery" accept="image/*" hidden>
+<input type="file" id="pick-camera" accept="image/*" capture="environment" hidden>
+<input type="file" id="pick-backup" accept=".json,application/json" hidden>
+<canvas id="canvas"></canvas>
+
+<script>
+/* =========================================================================
+   FloraTrack — plant identification + stock for small plant vendors.
+   Identification: Flask /identify (Pl@ntNet). Stock data: this device (localStorage).
+   Screens are routed by the URL hash so the Android back button works.
+   ========================================================================= */
+
+// ---------- icons ----------
+const ICONS = {
+  home:'<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/>',
+  box:'<path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/>',
+  scan:'<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M7 12h10"/>',
+  cart:'<path d="M3 4h2l2.4 11h10.2L20 7H6.2"/><circle cx="9" cy="19.5" r="1.4"/><circle cx="17" cy="19.5" r="1.4"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>', minus:'<path d="M5 12h14"/>',
+  chart:'<path d="M5 20V11M11 20V5M17 20v-8M3 20h18"/>',
+  leaf:'<path d="M5 21c0-9 5-15 15-16-1 10-7 15-15 16z"/><path d="M5 21 14 12"/>',
+  camera:'<path d="M4 8h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13.5" r="3.5"/>',
+  image:'<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 17-5-5-9 8"/>',
+  menu:'<path d="M4 6h16M4 12h10M4 18h16"/>', back:'<path d="M15 5l-7 7 7 7"/>', chev:'<path d="m9 5 7 7-7 7"/>',
+  edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/>', trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+  alert:'<path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/>',
+  peso:'<path d="M8 20V4h5a4 4 0 0 1 0 8H8"/><path d="M5 7.5h14M5 10.5h14"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/>',
+  backup:'<path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v3h16v-3"/>',
+  help:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.5V14M12 17h.01"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/>',
+  calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  close:'<path d="M6 6l12 12M18 6 6 18"/>', check:'<path d="m5 12 5 5 9-10"/>',
+  flip:'<path d="M4 9a8 8 0 0 1 14-3l2 2M20 15a8 8 0 0 1-14 3l-2-2"/><path d="M20 4v4h-4M4 20v-4h4"/>',
+  sparkle:'<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>',
+  trend:'<path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+};
+const ic = (n, cls='') => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]||''}</svg>`;
+
+// Big decorative leaf silhouettes used behind the dark green headers.
+function leavesBg(opacity=.16){
+  const leaf = (x, y, s, r, o) => `<g transform="translate(${x} ${y}) rotate(${r}) scale(${s})" opacity="${o}">
+    <path d="M0 0 C-40 -30 -44 -96 0 -140 C44 -96 40 -30 0 0Z" fill="#B5E06C"/>
+    <path d="M0 0 V-132" stroke="#173F27" stroke-width="3" opacity=".5"/>
+    <path d="M0 -40 L-22 -64 M0 -70 L-20 -94 M0 -40 L22 -64 M0 -70 L20 -94" stroke="#173F27" stroke-width="2.5" opacity=".45"/></g>`;
+  return `<svg class="leaves" viewBox="0 0 400 260" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    ${leaf(370, 250, 1.1, -28, opacity)}${leaf(330, 120, .7, 30, opacity * .8)}${leaf(20, 290, .9, 35, opacity * .7)}</svg>`;
+}
+
+// ---------- helpers ----------
+const $ = s => document.querySelector(s);
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const peso = n => '₱' + Number(n || 0).toLocaleString('en-PH', {minimumFractionDigits:0, maximumFractionDigits:2});
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const DAY = 864e5;
+const startOfDay = t => { const d = new Date(t); d.setHours(0,0,0,0); return d.getTime(); };
+function ago(t){
+  const d = Date.now() - t;
+  if (d < 6e4) return 'Just now';
+  if (d < 36e5) return Math.floor(d/6e4) + ' min ago';
+  if (d < DAY) return Math.floor(d/36e5) + ' h ago';
+  return new Date(t).toLocaleDateString('en-PH', {month:'short', day:'numeric'});
+}
+const fmtDate = t => new Date(t).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'});
+
+// ---------- generated plant illustrations ----------
+function hash(str){ let h = 2166136261; for (const c of String(str)) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0; }
+const GREENS = [['#2E7D32','#1B5E20'],['#4C9A2A','#33701B'],['#2F6F4E','#1F4D36'],['#6A9F3A','#4D7A26'],['#3E8E5E','#2A6744']];
+const POTS = ['#D7C6AB','#B9CBB3','#C8896A','#59675F','#E6DCCB','#A7B9C9'];
+const TINTS = ['#EEF4EC','#F1F0E6','#EAF2F4','#F4EFEA','#EDF3E4'];
+/** Draws a potted plant. The plant type follows the category or name, so the same plant always looks the same. */
+function plantSVG(seed, category='', name=''){
+  const h = hash(seed + name);
+  const [g1, g2] = GREENS[h % GREENS.length];
+  const pot = POTS[(h >>> 3) % POTS.length], tint = TINTS[(h >>> 6) % TINTS.length];
+  const text = (category + ' ' + name).toLowerCase();
+  let type = ['sword','round','split','trailing'][(h >>> 9) % 4];
+  if (/succulent|cactus|aloe|echeveria|haworthia/.test(text)) type = 'rosette';
+  else if (/snake|sansevieria|dracaena|grass/.test(text)) type = 'sword';
+  else if (/monstera|philodendron|anthurium/.test(text)) type = 'split';
+  else if (/pothos|ivy|trailing|vine|hanging/.test(text)) type = 'trailing';
+  const flower = /flower|lily|orchid|rose|anthurium|bougainvillea/.test(text) ? ['#F28CA8','#F6C453','#FFFFFF','#E8655A'][(h >>> 12) % 4] : null;
+  const leaf = (x, y, rot, len, w, fill) => `<path transform="translate(${x} ${y}) rotate(${rot})" d="M0 0 C${-w} ${-len*.3} ${-w} ${-len*.75} 0 ${-len} C${w} ${-len*.75} ${w} ${-len*.3} 0 0Z" fill="${fill}"/>`;
+  let p = '';
+  if (type === 'sword'){
+    [[-22,30,g2],[-8,40,g1],[6,44,g2],[20,32,g1],[-14,26,g1],[14,24,g2]].forEach(([r,l,f]) => p += leaf(50, 66, r, l, 6, f));
+    p += `<g opacity=".35">${[[-8,40],[6,44]].map(([r,l]) => `<path transform="translate(50 66) rotate(${r})" d="M-2 -10 h4 M-3 -20 h6 M-3 -30 h6" stroke="#E8F2C8" stroke-width="1.6"/>`).join('')}</g>`;
+  } else if (type === 'round'){
+    [[-40,22],[-15,32],[12,30],[38,22],[0,40],[-28,36],[28,38]].forEach(([r,l], k) => {
+      const rad = (r - 90) * Math.PI / 180, x = 50 + Math.cos(rad) * l, y = 66 + Math.sin(rad) * l;
+      p += `<path d="M50 66 L${x.toFixed(1)} ${y.toFixed(1)}" stroke="${g2}" stroke-width="1.6"/><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${7 + (k % 3)}" fill="${k % 2 ? g1 : g2}"/>`;
+    });
+  } else if (type === 'split'){
+    [[-38,34,g2],[30,36,g1],[-6,42,g1]].forEach(([r,l,f]) => {
+      p += leaf(50, 66, r, l, 17, f);
+      p += `<g transform="translate(50 66) rotate(${r})"><path d="M0 0 V${-l*.92}" stroke="${f === g1 ? g2 : g1}" stroke-width="1.5"/>`
+        + [.35,.55,.75].map(k => `<path d="M-15 ${-l*k} L-4 ${-l*k+3} M15 ${-l*k} L4 ${-l*k+3}" stroke="${tint}" stroke-width="2.4" stroke-linecap="round"/>`).join('') + `</g>`;
+    });
+  } else if (type === 'trailing'){
+    [[-1,0],[1,0],[-1,1],[1,1]].forEach(([dir, row]) => {
+      const sx = 50 + dir * 10, ex = 50 + dir * (30 + row * 8), ey = 74 + row * 14;
+      p += `<path d="M${sx} 64 Q${50 + dir * 34} ${54 + row * 6} ${ex} ${ey}" stroke="${g2}" stroke-width="1.6" fill="none"/>`;
+      [.3,.6,.9].forEach((t, k) => {
+        const x = sx + (ex - sx) * t + dir * 6 * Math.sin(t * 3), y = 62 + (ey - 62) * t - 6 * Math.sin(t * 3.1);
+        p += leaf(x, y, dir * (60 + k * 20), 11, 7, k % 2 ? g1 : g2);
+      });
+    });
+    [[-20,22,g1],[0,26,g2],[20,22,g1]].forEach(([r,l,f]) => p += leaf(50, 64, r, l, 8, f));
+  } else {
+    for (let k = 0; k < 10; k++) p += leaf(50, 60, k * 36, 20, 7, k % 2 ? g1 : g2);
+    for (let k = 0; k < 6; k++) p += leaf(50, 60, k * 60 + 18, 12, 5, '#8CC56A');
+  }
+  if (flower){
+    const spots = type === 'rosette' ? [[50,58]] : [[36,30],[60,24],[50,40]];
+    spots.forEach(([x, y]) => { p += `<circle cx="${x}" cy="${y}" r="5" fill="${flower}"/><circle cx="${x}" cy="${y}" r="1.8" fill="#F6C453"/>`; });
+  }
+  return `<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect x="-100" y="-50" width="300" height="200" fill="${tint}"/>
+    <ellipse cx="50" cy="95" rx="24" ry="3" fill="#000" opacity=".06"/>
+    ${p}
+    <path d="M30 70 H70 L65 94 H35 Z" fill="${pot}"/><rect x="27" y="64" width="46" height="9" rx="3" fill="${pot}"/>
+    <rect x="27" y="64" width="46" height="3" rx="1.5" fill="#fff" opacity=".25"/><path d="M33 75 H67 L66.4 78 H33.6Z" fill="#000" opacity=".07"/></svg>`;
+}
+/** Shows the plant's photo, or its illustration when it has none. */
+function art(item, cls='s56'){
+  if (item && item.photo) return `<span class="art ${cls}" style="background-image:url('${item.photo}')"></span>`;
+  return `<span class="art ${cls}">${plantSVG(item ? item.id : 'x', item?.category || '', item?.name || '')}</span>`;
+}
+
+// ---------- storage ----------
+const KEY = 'floratrack.v1';
+const CATEGORIES = ['Indoor Plant','Outdoor Plant','Flowering Plant','Succulent','Cactus','Herb','Fruit Tree','Fern','Seedling','Other'];
+const CARE = ['Easy','Moderate','Hard'];
+function emptyState(){ return {profile:null, items:[], moves:[]}; }
+let S = (() => { try{ const s = JSON.parse(localStorage.getItem(KEY)); return s && Array.isArray(s.items) ? s : emptyState(); }catch(e){ return emptyState(); } })();
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); return true; }
+  catch(e){ toast('Phone storage is full. Remove some photos or old plants, then try again.'); return false; }
+}
+const level = it => it.qty <= 0 ? 'out' : it.qty <= it.low ? 'low' : 'ok';
+const LEVEL = {ok:['ok','In stock','#4C9A2A'], low:['low','Low stock','#E39A1B'], out:['out','Out of stock','#C2362B']};
+const levelTag = it => { const [c, l] = LEVEL[level(it)]; return `<span class="tag ${c}">${l}</span>`; };
+const meter = it => { const cap = Math.max(it.low * 3, it.qty, 1); return `<div class="meter"><i style="width:${Math.max(4, it.qty / cap * 100)}%;background:${LEVEL[level(it)][2]}"></i></div>`; };
+const itemById = id => S.items.find(i => i.id === id);
+
+/** Records a stock change. Returns an error message, or '' when it worked. */
+function moveStock(item, type, qty, note=''){
+  if (!Number.isInteger(qty) || qty <= 0) return 'Enter a quantity greater than zero.';
+  const change = type === 'sale' ? -qty : qty;
+  if (item.qty + change < 0) return `Only ${item.qty} ${esc(item.name)} left in stock.`;
+  item.qty += change; item.updatedAt = Date.now();
+  S.moves.push({id:uid(), itemId:item.id, name:item.name, type, qty:change, price:item.price, note, at:Date.now()});
+  return '';
+}
+
+// ---------- photos ----------
+async function downscale(file, maxSide, quality=0.85){
+  const bmp = await createImageBitmap(file);
+  const k = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas');
+  c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  return new Promise(res => c.toBlob(res, 'image/jpeg', quality));
+}
+const blobToDataURL = blob => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(blob); });
+/** Small photo kept on the device with the plant record. */
+async function thumb(blob){ return blobToDataURL(await downscale(blob, 420, 0.74)); }
+
+let pickCallback = null;
+function pickPhoto(useCamera, cb){
+  pickCallback = cb;
+  const input = useCamera ? $('#pick-camera') : $('#pick-gallery');
+  input.value = ''; input.click();
+}
+['#pick-gallery','#pick-camera'].forEach(sel => $(sel).addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f || !pickCallback) return;
+  const cb = pickCallback; pickCallback = null;
+  try{ cb(await downscale(f, 1280, 0.9)); }catch(err){ toast('Could not read that image.'); }
+}));
+
+// ---------- identification (server: Pl@ntNet) ----------
+async function identify(blob, organ){
+  const form = new FormData();
+  form.append('image', blob, 'photo.jpg');
+  form.append('organ', organ || 'auto');
+  let resp;
+  try{ resp = await fetch('/identify', {method:'POST', body:form}); }
+  catch(e){ throw new Error('No internet connection. Identification needs internet; your stock list still works offline.'); }
+  let data = null;
+  try{ data = await resp.json(); }catch(e){ data = null; }
+  if (!resp.ok || !data) throw new Error((data && data.error) || `The server returned an error (${resp.status}). Try again in a moment.`);
+  return data;
+}
+const genus = sci => (sci || '').trim().split(/\s+/)[0].toLowerCase();
+const sciKey = v => (v || '').trim().toLowerCase();
+const cap = v => v ? v[0].toUpperCase() + v.slice(1) : '';
+/**
+ * Compares an identification with the stock.
+ *  exact   - plants that are the identified species
+ *  similar - plants that look like it: another species the photo could be (Pl@ntNet's other
+ *            guesses), same genus, then same family. In-stock plants are listed first.
+ */
+function stockMatches(matches){
+  const ms = (matches || []).slice(0, 5);
+  const top = ms[0];
+  if (!top) return {exact:[], similar:[]};
+  const exact = S.items.filter(it => it.sci && sciKey(it.sci) === sciKey(top.scientific_name));
+  const used = new Set(exact.map(i => i.id));
+  const similar = [];
+  const add = (it, reason, score) => { if (used.has(it.id)) return; used.add(it.id); similar.push({it, reason, score}); };
+  ms.slice(1).forEach(m => S.items
+    .filter(it => it.sci && sciKey(it.sci) === sciKey(m.scientific_name))
+    // A strong alternative guess outranks same-genus plants; a weak one ranks between genus and family.
+    .forEach(it => add(it, `Looks similar · ${m.confidence}% match`, (m.confidence >= 20 ? 300 : 150) + m.confidence)));
+  const g = genus(top.scientific_name);
+  if (g) S.items.filter(it => it.sci && genus(it.sci) === g).forEach(it => add(it, `Same genus · ${cap(g)}`, 200));
+  const fam = sciKey(top.family);
+  if (fam) S.items.filter(it => sciKey(it.family) === fam).forEach(it => add(it, `Same family · ${top.family}`, 100));
+  similar.sort((a, b) => (b.it.qty > 0) - (a.it.qty > 0) || b.score - a.score);
+  return {exact, similar};
+}
+function displayName(m){ return (m.common_names && m.common_names[0]) || m.scientific_name; }
+
+// ---------- UI helpers ----------
+function toast(msg){
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const el = document.createElement('div'); el.className = 'toast'; el.setAttribute('role','status');
+  el.innerHTML = ic('check','sm') + `<span>${esc(msg)}</span>`;
+  document.body.appendChild(el); setTimeout(() => el.remove(), 2800);
+}
+function sheet(html){ $('#overlay').innerHTML = `<div class="sheet-bg" data-act="close-sheet"><div class="sheet" role="dialog">${html}</div></div>`; }
+function closeSheet(){ $('#overlay').innerHTML = ''; }
+function confirmSheet(title, msg, okLabel, onOk){
+  sheet(`<h2>${esc(title)}</h2><p class="sub" style="font-size:15px;margin:0">${msg}</p>
+    <div class="btn-row"><button class="btn ghost" data-act="close-sheet">Cancel</button><button class="btn" style="background:var(--red)" id="ok-btn">${esc(okLabel)}</button></div>`);
+  $('#ok-btn').onclick = () => { closeSheet(); onOk(); };
+}
+function go(route){ if (location.hash === '#/' + route) render(); else location.hash = '#/' + route; }
+function nav(active){
+  const b = (r, i, l) => `<button class="${active===r?'on':''}" data-go="${r}" ${active===r?'aria-current="page"':''}>${ic(i)}${l}</button>`;
+  return `<nav class="nav">${b('home','home','Home')}${b('inventory','box','Inventory')}
+    <button class="scan-btn ${active==='scan'?'on':''}" data-go="scan" aria-label="Scan plant"><span class="ring">${ic('scan','lg')}</span><span>Scan</span></button>
+    ${b('sale','cart','Sales')}${b('profile','user','Profile')}</nav>`;
+}
+function topbar(title, back='home', right=''){
+  return `<div class="topbar"><button class="icon-btn" data-back="${back}" aria-label="Back">${ic('back')}</button><h1>${esc(title)}</h1>${right || '<span style="width:42px"></span>'}</div>`;
+}
+function emptyBox(seed, title, msg, btn='', category=''){
+  return `<div class="empty"><span class="art">${plantSVG(seed, category, '')}</span><b>${title}</b><p style="margin:0 0 8px;max-width:280px">${msg}</p>${btn}</div>`;
+}
+
+// ---------- drawer ----------
+const DRAWER = [['home','home','Home'],['inventory','box','Inventory'],['scan','scan','Scan Plant'],['sale','cart','Sales'],['reports','chart','Reports'],['profile','user','Profile & Settings']];
+function openDrawer(){
+  const cur = (location.hash.split('/')[1] || 'home');
+  $('#drawer-bg').innerHTML = `<div class="drawer" role="dialog" aria-label="Menu">
+    <svg class="leaves" viewBox="0 0 200 200" aria-hidden="true"><path d="M150 200 C90 170 70 90 150 20 C230 90 210 170 150 200Z" fill="#B5E06C" opacity=".35"/><path d="M150 200 V30" stroke="#173F27" stroke-width="3"/></svg>
+    <div class="brand"><span class="avatar" style="background:var(--sprout)">${ic('leaf')}</span><div><b>FloraTrack</b><div style="font-size:13px;opacity:.75">${esc(S.profile?.store || 'Track. Grow. Manage.')}</div></div></div>
+    ${DRAWER.map(([r,i,l]) => `<button class="d ${cur===r?'on':''}" data-go="${r}">${ic(i)}${l}</button>`).join('')}
+  </div>`;
+  $('#drawer-bg').classList.add('open');
+}
+function closeDrawer(){ $('#drawer-bg').classList.remove('open'); }
+$('#drawer-bg').addEventListener('click', e => {
+  const b = e.target.closest('[data-go]');
+  closeDrawer();
+  if (b) go(b.dataset.go);
+});
+
+// =========================================================================
+//  SCREENS
+// =========================================================================
+let invFilter = 'All', invQuery = '', homeQuery = '';
+let cart = {};
+let scan = {blob:null, url:null, organ:'auto', data:null, error:null, busy:false};
+let draft = null;          // Add/Edit form state
+let reportDays = 30;
+let stream = null, facing = 'environment';
+
+function stopCamera(){ if (stream){ stream.getTracks().forEach(t => t.stop()); stream = null; } }
+function salesByDay(days){
+  const from = startOfDay(Date.now()) - (days - 1) * DAY;
+  const sales = S.moves.filter(m => m.type === 'sale' && m.at >= from);
+  return Array.from({length:days}, (_, k) => { const d = from + k * DAY; return {d, v:sales.filter(m => m.at >= d && m.at < d + DAY).reduce((a, m) => a - m.qty * m.price, 0)}; });
+}
+
+const screens = {
+  // 1. Splash
+  splash(){
+    setTimeout(() => { if (location.hash === '#/splash') location.replace('#/' + (S.profile ? 'home' : 'welcome')); }, 1150);
+    return `<div class="splash">${leavesBg(.22)}<span class="art" style="width:120px;height:120px;border-radius:50%">${plantSVG('splash','Indoor','monstera')}</span>
+      <div class="wordmark" style="margin-top:14px">FloraTrack</div><div style="opacity:.8">Track. Grow. Manage.</div><div class="loading"><i></i></div></div>`;
+  },
+
+  // 2. Welcome (store setup; data stays on this phone)
+  welcome(){
+    return `<div class="screen no-nav">
+      <div class="welcome-top">${leavesBg(.22)}
+        <span class="art" style="width:104px;height:104px;border-radius:50%;margin:0 auto">${plantSVG('welcome','Flowering','anthurium')}</span>
+        <div class="wordmark" style="font-size:40px;margin-top:12px">FloraTrack</div>
+        <p style="margin:6px auto 0;max-width:290px;opacity:.85">Snap a plant to see if it's in stock. Track sales and restocks in one place.</p>
+      </div>
+      <div class="pad" style="padding-top:24px">
+        <div class="group">
+          <h3>Set up your store</h3>
+          <label class="f">Store name<input class="input" id="w-store" placeholder="e.g. Baba's Plant Shop" maxlength="40" value="${esc(S.profile?.store || '')}"></label>
+          <label class="f">Your name<input class="input" id="w-owner" placeholder="e.g. Mark" maxlength="30" value="${esc(S.profile?.owner || '')}"></label>
+          <div id="w-err"></div>
+          <button class="btn" data-act="welcome">Get Started</button>
+        </div>
+        <p class="sub" style="text-align:center;margin:0">Your stock is saved on this phone. Use Profile &gt; Backup to keep a copy.</p>
+      </div></div>`;
+  },
+
+  // 3. Dashboard
+  home(){
+    const it = S.items, q = homeQuery.toLowerCase();
+    const counts = {ok:0, low:0, out:0}; it.forEach(i => counts[level(i)]++);
+    const value = it.reduce((a, i) => a + Math.max(0, i.qty) * i.price, 0);
+    const units = it.reduce((a, i) => a + Math.max(0, i.qty), 0);
+    const week = salesByDay(7), weekTotal = week.reduce((a, d) => a + d.v, 0), maxDay = Math.max(1, ...week.map(d => d.v));
+    const recent = [...S.moves].sort((a, b) => b.at - a.at).slice(0, 5);
+    const attention = it.filter(i => level(i) !== 'ok').sort((a, b) => a.qty - b.qty);
+    const results = q ? it.filter(i => (i.name + ' ' + i.category + ' ' + (i.sci||'')).toLowerCase().includes(q)) : [];
+    const hour = new Date().getHours();
+    const greet = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+    const total = Math.max(1, it.length);
+    return `<div class="screen">
+      <div class="canopy">${leavesBg()}
+        <div class="row"><button class="icon-btn" data-act="drawer" aria-label="Menu">${ic('menu')}</button><span style="flex:1"></span>
+          <button class="avatar" data-go="profile" aria-label="Profile">${esc(S.profile.owner[0].toUpperCase())}</button></div>
+        <div class="greet">${greet}, ${esc(S.profile.owner)}</div>
+        <div style="opacity:.8;margin-bottom:16px">${esc(S.profile.store)}</div>
+        <div class="search">${ic('search','sm')}<input id="home-q" placeholder="Search your plants" value="${esc(homeQuery)}" aria-label="Search your plants"></div>
+        ${q ? '' : `<div class="health" style="margin-top:14px">
+          <div style="display:flex;justify-content:space-between;font-size:13px"><span style="opacity:.85">Stock health</span><span><b class="num">${units}</b> <span style="opacity:.8">plants on hand</span></span></div>
+          <div class="health-bar">${it.length ? ['ok','low','out'].map(k => counts[k] ? `<i style="width:${counts[k] / total * 100}%;background:${LEVEL[k][2]}"></i>` : '').join('') : ''}</div>
+          <div class="legend"><span><i class="dot" style="background:#4C9A2A"></i><b>${counts.ok}</b> in stock</span><span><i class="dot" style="background:#E39A1B"></i><b>${counts.low}</b> low</span><span><i class="dot" style="background:#E2574C"></i><b>${counts.out}</b> out</span></div>
+        </div>`}
+      </div>
+      <div class="pad">
+        ${q ? `<div class="section-h"><h2>Results</h2><span class="sub">${results.length} found</span></div>${results.length ? `<div class="list">${results.map(itemRow).join('')}</div>` : '<div class="sub">No plants match.</div>'}` : `
+        <button class="scan-card" data-go="scan"><span class="lens">${ic('camera','lg')}</span><span style="flex:1"><h3>Scan a plant</h3><p>Identify it and check your stock in one photo</p></span>${ic('chev')}</button>
+        <div class="grid2">
+          <div class="card stat"><span class="ic" style="background:#E3F1E0;color:var(--leaf)">${ic('leaf')}</span><small>Total plants</small><b>${it.length}</b></div>
+          <div class="card stat"><span class="ic" style="background:var(--violet-bg);color:var(--violet)">${ic('peso')}</span><small>Stock value</small><b>${peso(value)}</b></div>
+        </div>
+        <div class="card">
+          <div class="section-h" style="margin-bottom:12px"><div><div class="sub">Sales this week</div><div class="num" style="font-size:26px;font-weight:800">${peso(weekTotal)}</div></div><button class="link" data-go="reports">Reports</button></div>
+          <div class="spark">${week.map((d, k) => `<div class="${k===6?'today':''}"><i style="height:${Math.max(4, d.v / maxDay * 100)}%" title="${peso(d.v)}"></i><span>${new Date(d.d).toLocaleDateString('en-PH',{weekday:'narrow'})}</span></div>`).join('')}</div>
+        </div>
+        <div class="grid3">
+          <button class="tile" data-go="inventory"><span class="ic" style="background:#E3F1E0;color:var(--leaf)">${ic('box')}</span>Inventory</button>
+          <button class="tile" data-go="sale"><span class="ic" style="background:var(--amber-bg);color:var(--amber)">${ic('cart')}</span>New sale</button>
+          <button class="tile" data-go="reports"><span class="ic" style="background:var(--sky-bg);color:var(--sky)">${ic('chart')}</span>Reports</button>
+        </div>
+        ${attention.length ? `<div class="section-h"><h2>Needs restocking</h2><button class="link" data-act="filter-low">See all</button></div>
+          <div class="hscroll">${attention.slice(0, 8).map(i => `<button class="mini" data-item="${i.id}">${art(i, '')}<span><b>${esc(i.name)}</b><span class="sub">${i.qty} left · alert at ${i.low}</span></span>${levelTag(i)}</button>`).join('')}</div>` : ''}
+        <div class="section-h"><h2>Recent activity</h2>${S.moves.length ? '<button class="link" data-go="reports">All</button>' : ''}</div>
+        ${recent.length ? `<div class="card" style="padding:4px 16px"><div class="feed">${recent.map(m => { const item = itemById(m.itemId);
+          const label = m.type === 'sale' ? `Sold ${-m.qty} ${esc(m.name)}` : m.type === 'new' ? `${esc(m.name)} added` : `Restocked ${esc(m.name)}`;
+          return `<div class="it">${art(item || {id:m.itemId, name:m.name}, 's44')}<div class="t"><div>${label}</div><div class="sub">${ago(m.at)}</div></div>
+            ${m.type === 'sale' ? `<span class="amt pos">+${peso(-m.qty * m.price)}</span>` : `<span class="amt" style="color:var(--muted)">+${m.qty}</span>`}</div>`; }).join('')}</div></div>`
+          : emptyBox('home-empty', 'Your store is ready', 'Scan a plant or add one to your inventory to get started.', '<button class="btn" style="width:auto;padding:12px 20px" data-act="new-plant">Add a plant</button>')}`}
+      </div></div>${nav('home')}`;
+  },
+
+  // 6. Inventory list
+  inventory(){
+    const q = invQuery.toLowerCase();
+    const counts = {All:S.items.length, 'In Stock':0, 'Low Stock':0, 'Out of Stock':0};
+    S.items.forEach(i => counts[{ok:'In Stock', low:'Low Stock', out:'Out of Stock'}[level(i)]]++);
+    const list = S.items
+      .filter(i => !q || (i.name + ' ' + i.category + ' ' + (i.sci||'')).toLowerCase().includes(q))
+      .filter(i => invFilter === 'All' || ({'In Stock':'ok','Low Stock':'low','Out of Stock':'out'})[invFilter] === level(i))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    return `<div class="screen">
+      <div class="topbar"><button class="icon-btn" data-act="drawer" aria-label="Menu">${ic('menu')}</button><h1>Inventory</h1><span style="width:42px"></span></div>
+      <div class="pad">
+        <div class="search">${ic('search','sm')}<input id="inv-q" placeholder="Search plant, category..." value="${esc(invQuery)}" aria-label="Search inventory"></div>
+        <div class="chips">${Object.keys(counts).map(f => `<button class="chip ${invFilter===f?'on':''}" data-filter="${f}">${f}<span class="n">${counts[f]}</span></button>`).join('')}</div>
+        ${S.items.length === 0 ? emptyBox('inv-empty', 'No plants yet', 'Add the plants you sell, or scan one to add it with a photo.', '<button class="btn" style="width:auto;padding:12px 20px" data-act="new-plant">Add your first plant</button>')
+          : list.length ? `<div class="list">${list.map(itemRow).join('')}</div>` : '<div class="sub" style="text-align:center;padding:24px">No plants match this filter.</div>'}
+      </div>
+      ${S.items.length ? `<button class="fab" data-act="new-plant">${ic('plus')}Add plant</button>` : ''}</div>${nav('inventory')}`;
+  },
+
+  // 8. Plant details
+  item(id){
+    const it = itemById(id);
+    if (!it) return `<div class="screen">${topbar('Plant Details','inventory')}<div class="pad">${emptyBox('gone','Plant not found','It may have been deleted.')}</div></div>${nav('inventory')}`;
+    const hist = S.moves.filter(m => m.itemId === id).sort((a, b) => b.at - a.at);
+    const sold = -hist.filter(m => m.type === 'sale').reduce((a, m) => a + m.qty, 0);
+    return `<div class="screen">
+      <div class="banner">${art(it, '')}<div class="bar-top"><button class="icon-btn" data-back="inventory" aria-label="Back">${ic('back')}</button>
+        <button class="icon-btn" data-act="edit" data-id="${it.id}" aria-label="Edit plant">${ic('edit')}</button></div></div>
+      <div class="card sheet-card">
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div style="flex:1;min-width:0"><h1 style="font-size:24px">${esc(it.name)}</h1>${it.sci ? `<div class="sub" style="font-style:italic;font-size:14px">${esc(it.sci)}</div>` : ''}
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">${levelTag(it)}<span class="tag" style="background:var(--mist);color:var(--canopy)">${esc(it.category)}</span>${it.care ? `<span class="tag" style="background:var(--sky-bg);color:var(--sky)">${esc(it.care)} care</span>` : ''}</div></div>
+          <div style="text-align:right"><div class="stock-big" style="color:${level(it)==='out'?'var(--red)':'var(--canopy)'}">${it.qty}</div><div class="sub">in stock</div></div>
+        </div>
+        <div style="margin:14px 0 4px">${meter(it)}</div>
+        <div class="sub">Low-stock alert at ${it.low}</div>
+        <div class="btn-row" style="margin-top:14px"><button class="btn" data-act="sell" data-id="${it.id}" ${it.qty ? '' : 'disabled'}>${ic('cart','sm')} Sell</button><button class="btn soft" data-act="restock" data-id="${it.id}">${ic('plus','sm')} Add stock</button></div>
+      </div>
+      <div class="pad">
+        <div class="facts">
+          <div class="fact"><small>Price</small><b class="num" style="font-size:18px">${peso(it.price)}</b></div>
+          <div class="fact"><small>Stock value</small><b class="num" style="font-size:18px">${peso(Math.max(0, it.qty) * it.price)}</b></div>
+          <div class="fact"><small>Family</small><b>${esc(it.family || '—')}</b></div>
+          <div class="fact"><small>Total sold</small><b>${sold}</b></div>
+        </div>
+        ${it.desc ? `<div><h2 style="font-size:18px;margin-bottom:6px">About</h2><div style="line-height:1.6;color:#33413A">${esc(it.desc)}</div></div>` : ''}
+        <h2 style="font-size:18px">Stock history</h2>
+        ${hist.length ? `<div class="card" style="padding:4px 16px">${hist.map(m => `<div class="history"><span class="q" style="background:${m.qty > 0 ? '#E3F1E0' : 'var(--red-bg)'};color:${m.qty > 0 ? 'var(--leaf)' : 'var(--red)'}">${m.qty > 0 ? '+' : ''}${m.qty}</span>
+          <span style="flex:1"><b style="font-weight:600">${m.type==='sale' ? 'Sold' : m.type==='new' ? 'Initial stock' : 'Restocked'}</b>${m.note ? `<div class="sub">${esc(m.note)}</div>` : ''}</span><span class="sub">${fmtDate(m.at)}</span></div>`).join('')}</div>` : '<div class="sub">No stock movements yet.</div>'}
+        <button class="btn danger" data-act="delete" data-id="${it.id}">${ic('trash','sm')} Delete plant</button>
+      </div></div>${nav('inventory')}`;
+  },
+
+  // 7. Add / Edit plant
+  edit(id){
+    const existing = id && id !== 'new' ? itemById(id) : null;
+    if (!draft || draft.forId !== (existing ? existing.id : 'new')){
+      draft = existing ? {...existing, forId:existing.id} : {forId:'new', id:'draft-' + uid(), name:'', sci:'', family:'', category:CATEGORIES[0], care:'Easy', qty:'', price:'', low:5, desc:'', photo:null, blob:null};
+    }
+    const d = draft;
+    return `<div class="screen no-nav">${topbar(existing ? 'Edit Plant' : 'Add Plant', existing ? 'item/' + existing.id : 'inventory')}
+      <div class="pad">
+        <div class="group" style="padding:12px">
+          <div style="display:flex;gap:12px">
+            ${art(d, 'big')}
+            <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+              <button class="btn soft" data-act="photo-camera">${ic('camera','sm')} ${d.photo ? 'Retake' : 'Take photo'}</button>
+              <button class="btn soft" data-act="photo-gallery">${ic('image','sm')} Gallery</button>
+            </div>
+          </div>
+          ${d.blob && !existing ? `<button class="btn dark" data-act="identify-draft" id="id-btn">${ic('sparkle','sm')} Fill in name from photo</button>` : ''}
+          <div id="id-msg"></div>
+        </div>
+        <div class="group">
+          <h3>Plant</h3>
+          <label class="f">Plant name<input class="input" id="e-name" maxlength="60" value="${esc(d.name)}" placeholder="e.g. Monstera Deliciosa"></label>
+          <label class="f">Scientific name <span class="hint">Used to match scans to your stock</span><input class="input" id="e-sci" maxlength="80" value="${esc(d.sci)}" placeholder="e.g. Monstera deliciosa"></label>
+          <div class="grid2">
+            <label class="f">Category<select class="input" id="e-cat">${CATEGORIES.map(c => `<option ${c===d.category?'selected':''}>${c}</option>`).join('')}</select></label>
+            <label class="f">Family<input class="input" id="e-family" maxlength="40" value="${esc(d.family)}" placeholder="e.g. Araceae"></label>
+          </div>
+        </div>
+        <div class="group">
+          <h3>Stock &amp; price</h3>
+          <div class="grid2">
+            <label class="f">Quantity<input class="input" id="e-qty" inputmode="numeric" value="${esc(d.qty)}" placeholder="0" ${existing ? 'disabled' : ''}></label>
+            <label class="f">Price (₱)<input class="input" id="e-price" inputmode="decimal" value="${esc(d.price)}" placeholder="0.00"></label>
+          </div>
+          ${existing ? '<div class="sub" style="margin-top:-6px">To change the quantity, use Sell or Add stock on the plant page.</div>' : ''}
+          <div class="grid2">
+            <label class="f">Low-stock alert at<input class="input" id="e-low" inputmode="numeric" value="${esc(d.low)}"></label>
+            <label class="f">Care level<select class="input" id="e-care">${CARE.map(c => `<option ${c===d.care?'selected':''}>${c}</option>`).join('')}</select></label>
+          </div>
+        </div>
+        <div class="group">
+          <h3>Description</h3>
+          <textarea class="input" id="e-desc" maxlength="600" placeholder="Short description of the plant" aria-label="Description">${esc(d.desc)}</textarea>
+        </div>
+        <div id="e-err"></div>
+        <button class="btn" data-act="save-plant">${existing ? 'Save changes' : 'Add to inventory'}</button>
+      </div></div>`;
+  },
+
+  // 4. Scanner (camera)
+  scan(){
+    return `<div class="scanner">
+      <div class="topbar"><button class="icon-btn" data-back="home" aria-label="Back">${ic('back')}</button><h1>Identify Plant</h1><button class="icon-btn" data-act="flip" aria-label="Switch camera">${ic('flip')}</button></div>
+      <div class="viewfinder"><video id="video" autoplay playsinline muted></video><div class="vf-msg" id="vf-msg">Starting camera...</div><div class="frame"><i></i><i></i><i></i><i></i></div></div>
+      <div class="organs" role="group" aria-label="What does the photo show?">${['auto','leaf','flower','fruit','bark'].map(o => `<button class="chip ${scan.organ===o?'on':''}" data-organ="${o}">${o === 'auto' ? 'Auto' : cap(o)}</button>`).join('')}</div>
+      <div class="shutter-row">
+        <button class="round" data-act="scan-gallery" aria-label="Choose from gallery">${ic('image')}</button>
+        <button class="shutter" id="shutter" aria-label="Take photo" disabled></button>
+        <button class="round" data-act="scan-camera-app" aria-label="Use camera app">${ic('camera')}</button>
+      </div>
+      <p style="text-align:center;margin:6px 16px calc(18px + env(safe-area-inset-bottom));font-size:14px;opacity:.8">Fill the frame with one plant. Leaves and flowers work best.</p>
+    </div>`;
+  },
+
+  // 5. Identification result + stock check
+  result(){
+    if (!scan.blob){ setTimeout(() => location.replace('#/scan')); return ''; }
+    const ms = scan.data?.matches || [];
+    const top = ms[0];
+    const ringConf = c => { const r = 28, len = 2 * Math.PI * r;
+      return `<div class="ring-conf" aria-label="${c}% confidence"><svg viewBox="0 0 68 68"><circle cx="34" cy="34" r="${r}" stroke="rgba(255,255,255,.2)" stroke-width="6" fill="none"/>
+        <circle cx="34" cy="34" r="${r}" stroke="${c >= 50 ? '#B5E06C' : '#F6C453'}" stroke-width="6" fill="none" stroke-linecap="round" stroke-dasharray="${len * c / 100} ${len}"/></svg><b>${Math.round(c)}%</b></div>`; };
+    const hero = (title, sub, extra='') => `<div class="photo-hero" style="background-image:url('${scan.url}')">
+      ${scan.busy ? '<div class="scanline"></div>' : ''}
+      <div class="bar-top"><button class="icon-btn" data-back="scan" aria-label="Back">${ic('back')}</button><button class="icon-btn" data-go="scan" aria-label="Scan again">${ic('camera')}</button></div>
+      <div class="caption"><div style="flex:1;min-width:0">${title}${sub}</div>${extra}</div></div>`;
+    if (scan.busy) return `<div class="screen">${hero('<h1>Identifying...</h1>', '<div class="sci" style="font-style:normal">Checking the plant and your stock</div>')}</div>${nav('scan')}`;
+    if (scan.error) return `<div class="screen">${hero('<h1>Couldn\'t identify</h1>', '')}<div class="pad"><div class="err">${esc(scan.error)}</div><button class="btn" data-act="retry-scan">Try again</button><button class="btn ghost" data-go="scan">Scan another photo</button></div></div>${nav('scan')}`;
+    if (!top) return `<div class="screen">${hero('<h1>No plant found</h1>', '')}<div class="pad"><div class="warn">No plant was recognized. Try a closer, well-lit photo of a single leaf or flower.</div>
+      <button class="btn" data-go="scan">Scan again</button><button class="btn ghost" data-act="add-from-scan">Add to inventory anyway</button></div></div>${nav('scan')}`;
+    const low = top.confidence < 50;
+    const {exact, similar} = stockMatches(ms);
+    const available = exact.filter(i => i.qty > 0);
+    const offer = similar.filter(x => x.it.qty > 0);
+    const stockCard = (it, reason) => `<button class="stock-card ${reason ? '' : 'match'}" data-item="${it.id}">
+        ${art(it, 's64')}
+        <div style="flex:1;min-width:0"><div style="font-weight:700">${esc(it.name)}</div><div class="sub">${peso(it.price)} · ${esc(it.category)}</div>
+          <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">${reason ? `<span class="tag why">${esc(reason)}</span>` : ''}${levelTag(it)}</div></div>
+        <div style="text-align:center"><div class="stock-big" style="font-size:30px;color:${level(it)==='out' ? 'var(--red)' : 'var(--canopy)'}">${it.qty}</div><div class="sub">in stock</div></div></button>`;
+    let stockHtml;
+    if (available.length){
+      stockHtml = exact.map(i => stockCard(i)).join('') + (exact.length === 1 ? `<div class="btn-row"><button class="btn" data-act="sell" data-id="${exact[0].id}">${ic('cart','sm')} Sell</button><button class="btn soft" data-act="restock" data-id="${exact[0].id}">${ic('plus','sm')} Add stock</button></div>` : '')
+        + (offer.length ? `<div class="sub" style="margin-top:4px">Other plants you have that look similar</div>${offer.map(x => stockCard(x.it, x.reason)).join('')}` : '');
+    } else {
+      stockHtml = (exact.length ? exact.map(i => stockCard(i)).join('') + `<button class="btn soft" data-act="restock" data-id="${exact[0].id}">${ic('plus','sm')} Add stock</button>` : '')
+        + (offer.length
+          ? `<div class="info"><b>${exact.length ? 'Out of stock' : "You don't have this plant"}, but you have ${offer.length} similar-looking plant${offer.length > 1 ? 's' : ''} to offer:</b></div>${offer.map(x => stockCard(x.it, x.reason)).join('')}`
+          : `<div class="info"><b>${exact.length ? 'Out of stock' : 'Not in your stock yet'}.</b> ${similar.length ? 'Similar plants you carry are also out of stock.' : 'No similar plants in your stock.'}${exact.length ? '' : ' Add it to your inventory with this photo.'}</div>`);
+    }
+    return `<div class="screen">${hero(`<h1>${esc(displayName(top))}</h1>`, `<div class="sci">${esc(top.scientific_name)}</div>`, ringConf(top.confidence))}
+      <div class="pad">
+      ${low ? '<div class="warn"><b>Not very sure.</b> Try a closer, well-lit photo of a leaf or flower, and pick what it shows on the scan screen.</div>' : ''}
+      <div class="section-h"><h2>In your stock</h2></div>
+      ${stockHtml}
+      ${exact.length ? '' : `<button class="btn" data-act="add-from-scan">${ic('plus','sm')} Add to inventory</button>`}
+      <h2 style="font-size:18px;margin-top:4px">About this plant</h2>
+      <div class="facts"><div class="fact"><small>Family</small><b>${esc(top.family || '—')}</b></div><div class="fact"><small>Genus</small><b>${esc(top.genus || '—')}</b></div></div>
+      ${(top.common_names||[]).length > 1 ? `<div class="sub">Also called ${esc(top.common_names.slice(1,4).join(', '))}</div>` : ''}
+      ${scan.data.description ? `<div style="line-height:1.65;color:#33413A">${esc(scan.data.description)}</div>` : ''}
+      ${ms.length > 1 ? `<div class="card"><div style="font-weight:700;margin-bottom:10px">Other possibilities</div>${ms.slice(1).map(m => `<div style="display:flex;align-items:center;gap:10px;padding:6px 0"><span style="flex:1;min-width:0">${esc(displayName(m))}<div class="sub" style="font-style:italic">${esc(m.scientific_name)}</div></span>
+        <div class="meter" style="width:70px"><i style="width:${m.confidence}%;background:var(--leaf)"></i></div><span class="sub num" style="width:40px;text-align:right">${m.confidence}%</span></div>`).join('')}</div>` : ''}
+      <button class="btn ghost" data-go="scan">${ic('camera','sm')} Scan again</button>
+      <p class="sub" style="margin:0">General reference only. Don't eat or use a plant medicinally based on an app identification.</p>
+    </div></div>${nav('scan')}`;
+  },
+
+  // 9. New sale
+  sale(){
+    const items = S.items.filter(i => i.qty > 0 || cart[i.id]).sort((a, b) => a.name.localeCompare(b.name));
+    const count = Object.values(cart).reduce((a, b) => a + b, 0);
+    const total = items.reduce((a, i) => a + (cart[i.id] || 0) * i.price, 0);
+    return `<div class="screen" style="padding-bottom:220px">${topbar('New Sale','home')}
+      <div class="pad">
+        <div class="search">${ic('search','sm')}<input id="sale-q" placeholder="Search plant..." aria-label="Search plants to sell"></div>
+        <div id="sale-list" class="list">
+        ${items.length ? items.map(i => `<div class="row-item" data-name="${esc(i.name.toLowerCase())}" style="${cart[i.id] ? 'box-shadow:inset 0 0 0 2px var(--leaf),var(--shadow)' : ''}">${art(i)}
+          <div class="t"><div class="name">${esc(i.name)}</div><div class="price">${peso(i.price)}</div><div class="sub">${i.qty} in stock</div></div>
+          <div class="qty"><button data-cart="${i.id}" data-d="-1" aria-label="One less ${esc(i.name)}">${ic('minus','sm')}</button><b>${cart[i.id] || 0}</b><button data-cart="${i.id}" data-d="1" aria-label="One more ${esc(i.name)}">${ic('plus','sm')}</button></div></div>`).join('')
+          : emptyBox('sale-empty','Nothing to sell yet','Plants with stock appear here. Add stock in Inventory first.')}
+        </div>
+      </div>
+      <div class="total-bar">
+        <div style="flex:1"><div style="font-size:13px;opacity:.8">${count} item${count === 1 ? '' : 's'}</div><div class="num" style="font-size:24px;font-weight:800">${peso(total)}</div></div>
+        <button class="btn" data-act="confirm-sale" ${count ? '' : 'disabled'}>Confirm sale</button>
+      </div></div>${nav('sale')}`;
+  },
+
+  // 10. Reports
+  reports(){
+    const days = salesByDay(reportDays), from = days[0].d;
+    const sales = S.moves.filter(m => m.type === 'sale' && m.at >= from);
+    const total = sales.reduce((a, m) => a - m.qty * m.price, 0);
+    const sold = sales.reduce((a, m) => a - m.qty, 0);
+    const prev = S.moves.filter(m => m.type === 'sale' && m.at >= from - reportDays * DAY && m.at < from).reduce((a, m) => a - m.qty * m.price, 0);
+    const change = prev > 0 ? Math.round((total - prev) / prev * 100) : null;
+    const top = Object.entries(sales.reduce((acc, m) => { (acc[m.itemId] = acc[m.itemId] || {name:m.name, u:0, v:0}); acc[m.itemId].u -= m.qty; acc[m.itemId].v -= m.qty * m.price; return acc; }, {}))
+      .sort((a, b) => b[1].u - a[1].u).slice(0, 5);
+    const maxTop = Math.max(1, ...top.map(t => t[1].u));
+    return `<div class="screen">${topbar('Reports','home')}
+      <div class="pad">
+        <div class="chips">${[[7,'7 days'],[30,'30 days'],[90,'90 days']].map(([v,l]) => `<button class="chip ${v===reportDays?'on':''}" data-range="${v}">${l}</button>`).join('')}</div>
+        <div class="card" style="background:var(--canopy);color:#fff;position:relative;overflow:hidden">${leavesBg(.12)}
+          <div style="position:relative"><div style="opacity:.8;font-size:13px">${fmtDate(from)} – ${fmtDate(Date.now())}</div>
+          <div class="num" style="font-size:34px;font-weight:800;margin:4px 0">${peso(total)}</div>
+          <div style="display:flex;gap:16px;font-size:13.5px;opacity:.9"><span><b>${sold}</b> plants sold</span><span><b>${sales.length}</b> sales</span>${change !== null ? `<span style="color:${change >= 0 ? 'var(--sprout)' : '#F6A89E'}">${change >= 0 ? '▲' : '▼'} ${Math.abs(change)}% vs previous</span>` : ''}</div></div>
+        </div>
+        <div class="card chart"><div style="font-weight:700;margin-bottom:8px">Daily sales</div>${lineChart(days)}</div>
+        <div class="card"><div style="font-weight:700;margin-bottom:12px">Top selling plants</div>
+          <div class="tops">${top.length ? top.map(([iid, t], k) => `<div class="r">${art(itemById(iid) || {id:iid, name:t.name}, 's44')}<div class="t"><span>${esc(t.name)}</span><div class="meter"><i style="width:${t.u / maxTop * 100}%;background:${k === 0 ? 'var(--leaf)' : '#8CC56A'}"></i></div></div><div style="text-align:right"><b class="num">${t.u}</b><div class="sub">${peso(t.v)}</div></div></div>`).join('') : '<div class="sub">No sales in this period.</div>'}</div></div>
+        <div class="card"><div style="font-weight:700;margin-bottom:6px">Needs restocking</div>
+          ${S.items.filter(i => level(i) !== 'ok').map(i => `<button class="row-item" style="box-shadow:none;padding:8px 0;border-radius:0;border-bottom:1px solid var(--line)" data-item="${i.id}">${art(i, 's44')}<div class="t"><div class="name">${esc(i.name)}</div><div class="sub">${i.qty} left</div></div>${levelTag(i)}</button>`).join('') || '<div class="sub">All plants are well stocked.</div>'}</div>
+      </div></div>${nav('home')}`;
+  },
+
+  // 11. Profile & settings
+  profile(){
+    const p = S.profile;
+    const units = -S.moves.filter(m => m.type === 'sale').reduce((a, m) => a + m.qty, 0);
+    const revenue = -S.moves.filter(m => m.type === 'sale').reduce((a, m) => a + m.qty * m.price, 0);
+    return `<div class="screen">
+      <div class="canopy profile-head">${leavesBg(.18)}
+        <div class="row"><button class="icon-btn" data-act="drawer" aria-label="Menu">${ic('menu')}</button><span style="flex:1"></span></div>
+        <div class="avatar">${esc(p.owner[0].toUpperCase())}</div>
+        <h1 style="font-size:24px">${esc(p.owner)}</h1><div style="opacity:.8">${esc(p.store)}</div>
+      </div>
+      <div class="pad">
+        <div class="grid3" style="margin-top:-46px;position:relative">
+          ${[[S.items.length,'Plants'],[units,'Sold'],[peso(revenue),'Revenue']].map(([v,l]) => `<div class="card" style="padding:12px;text-align:center"><b class="num" style="font-size:19px">${v}</b><div class="sub">${l}</div></div>`).join('')}
+        </div>
+        <div class="menu-list">
+          <button data-act="account"><span class="ic">${ic('settings','sm')}</span><span>Account settings</span>${ic('chev','sm')}</button>
+          <button data-act="backup"><span class="ic">${ic('backup','sm')}</span><span>Backup &amp; restore</span>${ic('chev','sm')}</button>
+          <button data-act="help"><span class="ic">${ic('help','sm')}</span><span>Help &amp; support</span>${ic('chev','sm')}</button>
+          <button data-act="about"><span class="ic">${ic('info','sm')}</span><span>About FloraTrack</span>${ic('chev','sm')}</button>
+        </div>
+        <button class="btn danger" data-act="reset">Reset app data</button>
+        <p class="sub" style="text-align:center;margin:0">${S.moves.length} stock records saved on this phone</p>
+      </div></div>${nav('profile')}`;
+  },
+};
+
+function itemRow(i){
+  return `<button class="row-item" data-item="${i.id}">${art(i)}
+    <div class="t"><div class="name">${esc(i.name)}</div><div class="sub">${esc(i.category)} · <span class="price">${peso(i.price)}</span></div>${meter(i)}</div>
+    <div class="qty-col"><b style="color:${level(i)==='out'?'var(--red)':'var(--canopy)'}">${i.qty}</b>${level(i) === 'ok' ? '<span class="sub">in stock</span>' : levelTag(i)}</div></button>`;
+}
+
+/** Daily sales area chart (SVG), labels sized to the real values. */
+function lineChart(days){
+  const W = 340, H = 170, L = 44, R = 10, T = 12, B = 26;
+  const max = Math.max(...days.map(d => d.v));
+  const top = max <= 0 ? 1000 : Math.ceil(max / Math.pow(10, Math.floor(Math.log10(max)))) * Math.pow(10, Math.floor(Math.log10(max)));
+  const x = k => L + (days.length === 1 ? 0 : k * (W - L - R) / (days.length - 1));
+  const y = v => T + (H - T - B) * (1 - v / top);
+  const pts = days.map((d, k) => `${x(k).toFixed(1)},${y(d.v).toFixed(1)}`).join(' ');
+  const grid = [0, .25, .5, .75, 1].map(f => `<line x1="${L}" x2="${W - R}" y1="${y(top * f)}" y2="${y(top * f)}" stroke="#E6EDE3"/><text x="${L - 6}" y="${y(top * f) + 4}" text-anchor="end" font-size="10" fill="#5E6D61">${Math.round(top * f).toLocaleString()}</text>`).join('');
+  const ticks = [0, Math.floor((days.length - 1) / 2), days.length - 1].map(k => `<text x="${x(k)}" y="${H - 6}" text-anchor="middle" font-size="10" fill="#5E6D61">${new Date(days[k].d).toLocaleDateString('en-PH', {month:'short', day:'numeric'})}</text>`).join('');
+  const last = days.length - 1;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Daily sales"><defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#2E7D32" stop-opacity=".28"/><stop offset="1" stop-color="#2E7D32" stop-opacity="0"/></linearGradient></defs>${grid}
+    <polygon points="${x(0)},${y(0)} ${pts} ${x(last)},${y(0)}" fill="url(#g)"/>
+    <polyline points="${pts}" fill="none" stroke="#2E7D32" stroke-width="2.5" stroke-linejoin="round"/>
+    <circle cx="${x(last)}" cy="${y(days[last].v)}" r="4.5" fill="#2E7D32" stroke="#fff" stroke-width="2"/>${ticks}</svg>`;
+}
+
+// =========================================================================
+//  RENDER + EVENTS
+// =========================================================================
+function render(){
+  const parts = location.hash.replace(/^#\//, '').split('/');
+  let view = parts[0] || 'splash';
+  const arg = parts[1];
+  if (!screens[view]) view = 'home';
+  if (view !== 'splash' && view !== 'welcome' && !S.profile) view = 'welcome';
+  if (view !== 'scan') stopCamera();
+  if (view !== 'edit') draft = null;
+  closeDrawer(); closeSheet();
+  $('#app').innerHTML = screens[view](arg);
+  window.scrollTo(0, 0);
+  after(view, arg);
+}
+window.addEventListener('hashchange', render);
+
+function keepFocus(sel, fn){
+  const el = $(sel); if (!el) return;
+  el.addEventListener('input', () => { const pos = el.selectionStart; fn(el.value); render(); const n = $(sel); n.focus(); n.setSelectionRange(pos, pos); });
+}
+function after(view){
+  if (view === 'home') keepFocus('#home-q', v => homeQuery = v);
+  if (view === 'inventory') keepFocus('#inv-q', v => invQuery = v);
+  if (view === 'sale'){ $('#sale-q')?.addEventListener('input', e => { const q = e.target.value.toLowerCase(); document.querySelectorAll('#sale-list .row-item').forEach(r => r.hidden = !r.dataset.name.includes(q)); }); }
+  if (view === 'scan') startScanner();
+}
+
+async function startScanner(){
+  const video = $('#video'), msg = $('#vf-msg'), shutter = $('#shutter');
+  stopCamera();
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:facing}, audio:false});
+    if (!video.isConnected){ stopCamera(); return; }
+    video.srcObject = stream; msg.hidden = true; shutter.disabled = false;
+  }catch(e){
+    msg.textContent = 'Live camera isn\'t available here. Use the camera or gallery button below.';
+    shutter.disabled = true;
+  }
+  shutter.onclick = () => {
+    if (!video.videoWidth) return;
+    const c = $('#canvas'); c.width = video.videoWidth; c.height = video.videoHeight;
+    c.getContext('2d').drawImage(video, 0, 0);
+    c.toBlob(b => runScan(b), 'image/jpeg', 0.9);
+  };
+}
+
+async function runScan(blob){
+  stopCamera();
+  if (scan.url) URL.revokeObjectURL(scan.url);
+  scan = {...scan, blob, url:URL.createObjectURL(blob), data:null, error:null, busy:true};
+  go('result');
+  try{ scan.data = await identify(blob, scan.organ); }
+  catch(e){ scan.error = e.message; }
+  scan.busy = false;
+  if (location.hash === '#/result') render();
+}
+
+function readDraftFields(){
+  if (!draft) return;
+  const v = id => $(id) ? $(id).value : undefined;
+  Object.assign(draft, {name:v('#e-name'), sci:v('#e-sci'), category:v('#e-cat'), care:v('#e-care'), qty:v('#e-qty') ?? draft.qty, price:v('#e-price'), low:v('#e-low'), family:v('#e-family'), desc:v('#e-desc')});
+}
+
+function stockSheet(item, type){
+  sheet(`<div style="display:flex;gap:12px;align-items:center">${art(item, 's56')}<div><h2>${type === 'sale' ? 'Record sale' : 'Add stock'}</h2><div class="sub" style="font-size:14px">${esc(item.name)} · ${item.qty} in stock</div></div></div>
+    <div class="sub" style="text-align:center">${type === 'sale' ? 'How many were sold?' : 'How many arrived?'}</div>
+    <div class="stepper"><button data-step="-1" aria-label="Less">${ic('minus')}</button><input id="s-qty" inputmode="numeric" value="1" aria-label="Quantity"><button data-step="1" aria-label="More">${ic('plus')}</button></div>
+    <label class="f">Note (optional)<input class="input" id="s-note" maxlength="60" placeholder="${type === 'sale' ? 'e.g. walk-in customer' : 'e.g. from supplier'}"></label>
+    <div id="s-err"></div><div class="btn-row"><button class="btn ghost" data-act="close-sheet">Cancel</button><button class="btn" id="s-ok">Save</button></div>`);
+  document.querySelectorAll('[data-step]').forEach(b => b.onclick = () => { const n = Math.max(1, (parseInt($('#s-qty').value, 10) || 0) + Number(b.dataset.step)); $('#s-qty').value = type === 'sale' ? Math.min(n, Math.max(1, item.qty)) : n; });
+  $('#s-ok').onclick = () => {
+    const raw = $('#s-qty').value.trim();
+    const err = moveStock(item, type, /^\d+$/.test(raw) ? Number(raw) : NaN, $('#s-note').value.trim());
+    if (err){ $('#s-err').innerHTML = `<div class="err">${err}</div>`; return; }
+    if (!save()) return;
+    closeSheet(); render(); toast(type === 'sale' ? `Sale recorded: ${peso(Number(raw) * item.price)}` : `Added ${raw} to ${item.name}.`);
+  };
+}
+
+document.addEventListener('click', async e => {
+  const t = e.target.closest('[data-go],[data-back],[data-act],[data-item],[data-filter],[data-cart],[data-organ],[data-range]');
+  if (!t) return;
+  if (t.dataset.act === 'close-sheet'){ if (e.target === t || t.tagName === 'BUTTON') closeSheet(); return; }
+  if (t.dataset.go){ if (t.dataset.go === 'sale') cart = {}; return go(t.dataset.go); }
+  if (t.dataset.back){ if (history.length > 1) history.back(); else go(t.dataset.back); return; }
+  if (t.dataset.item) return go('item/' + t.dataset.item);
+  if (t.dataset.filter){ invFilter = t.dataset.filter; return render(); }
+  if (t.dataset.range){ reportDays = Number(t.dataset.range); return render(); }
+  if (t.dataset.organ){ scan.organ = t.dataset.organ; document.querySelectorAll('[data-organ]').forEach(c => c.classList.toggle('on', c === t)); return; }
+  if (t.dataset.cart){
+    const it = itemById(t.dataset.cart); const n = Math.max(0, Math.min(it.qty, (cart[it.id] || 0) + Number(t.dataset.d)));
+    if (n === 0) delete cart[it.id]; else cart[it.id] = n;
+    const y = window.scrollY; render(); window.scrollTo(0, y); return;
+  }
+  const id = t.dataset.id, item = id && itemById(id);
+  switch (t.dataset.act){
+    case 'drawer': return openDrawer();
+    case 'filter-low': invFilter = 'Low Stock'; return go('inventory');
+    case 'welcome': {
+      const store = $('#w-store').value.trim(), owner = $('#w-owner').value.trim();
+      if (!store || !owner){ $('#w-err').innerHTML = '<div class="err">Enter your store name and your name.</div>'; return; }
+      S.profile = {store, owner}; save(); return location.replace('#/home');
+    }
+    case 'new-plant': draft = null; return go('edit/new');
+    case 'edit': draft = null; return go('edit/' + id);
+    case 'sell': return stockSheet(item, 'sale');
+    case 'restock': return stockSheet(item, 'in');
+    case 'delete': return confirmSheet('Delete plant?', `This removes <b>${esc(item.name)}</b> and its stock history from this phone. This cannot be undone.`, 'Delete', () => {
+      S.items = S.items.filter(i => i.id !== id); S.moves = S.moves.filter(m => m.itemId !== id); save(); toast('Plant deleted.'); go('inventory'); });
+    case 'photo-camera': case 'photo-gallery':
+      readDraftFields();
+      return pickPhoto(t.dataset.act === 'photo-camera', async blob => { draft.blob = blob; draft.photo = await thumb(blob); render(); });
+    case 'identify-draft': {
+      readDraftFields();
+      const btn = $('#id-btn'); btn.disabled = true; btn.textContent = 'Identifying...';
+      try{
+        const data = await identify(draft.blob, 'auto'); const m = (data.matches || [])[0];
+        if (!m){ $('#id-msg').innerHTML = '<div class="warn">No plant recognized in this photo. Fill in the name yourself.</div>'; btn.disabled = false; btn.textContent = 'Fill in name from photo'; return; }
+        Object.assign(draft, {name:draft.name || displayName(m), sci:m.scientific_name, family:m.family || draft.family, desc:draft.desc || (data.description || '').slice(0, 600)});
+        render(); $('#id-msg').innerHTML = `<div class="info">Identified as <b>${esc(displayName(m))}</b> (${m.confidence}%). Check the details, then add quantity and price.</div>`;
+      }catch(err){ $('#id-msg').innerHTML = `<div class="err">${esc(err.message)}</div>`; btn.disabled = false; btn.textContent = 'Fill in name from photo'; }
+      return;
+    }
+    case 'save-plant': {
+      readDraftFields();
+      const d = draft, existing = d.forId !== 'new' ? itemById(d.forId) : null;
+      const qty = String(d.qty).trim(), price = String(d.price).trim(), low = String(d.low).trim();
+      const err = !d.name.trim() ? 'Enter the plant name.'
+        : !existing && !/^\d+$/.test(qty) ? 'Enter the quantity (a whole number).'
+        : !(price !== '' && !isNaN(price) && Number(price) >= 0) ? 'Enter a valid price.'
+        : !/^\d+$/.test(low) ? 'Enter the low-stock alert level (a whole number).' : '';
+      if (err){ $('#e-err').innerHTML = `<div class="err">${err}</div>`; $('#e-err').scrollIntoView({block:'center'}); return; }
+      const fields = {name:d.name.trim(), sci:d.sci.trim(), family:d.family.trim(), category:d.category, care:d.care, price:Number(price), low:Number(low), desc:d.desc.trim(), photo:d.photo, updatedAt:Date.now()};
+      let saved;
+      if (existing){ Object.assign(existing, fields); saved = existing; }
+      else {
+        saved = {id:uid(), qty:0, createdAt:Date.now(), ...fields};
+        S.items.push(saved);
+        if (Number(qty) > 0){ saved.qty = Number(qty); S.moves.push({id:uid(), itemId:saved.id, name:saved.name, type:'new', qty:Number(qty), price:saved.price, note:'', at:Date.now()}); }
+      }
+      if (!save()) return;
+      draft = null; toast(existing ? 'Changes saved.' : `${saved.name} added to inventory.`);
+      location.replace('#/item/' + saved.id); return;
+    }
+    case 'scan-gallery': return pickPhoto(false, runScan);
+    case 'scan-camera-app': return pickPhoto(true, runScan);
+    case 'flip': facing = facing === 'environment' ? 'user' : 'environment'; return startScanner();
+    case 'retry-scan': return runScan(scan.blob);
+    case 'add-from-scan': {
+      const m = (scan.data && scan.data.matches || [])[0];
+      draft = {forId:'new', id:'draft-' + uid(), name:m ? displayName(m) : '', sci:m ? m.scientific_name : '', family:m?.family || '', category:CATEGORIES[0], care:'Easy', qty:'', price:'', low:5,
+        desc:(scan.data?.description || '').slice(0, 600), photo:await thumb(scan.blob), blob:null};
+      return go('edit/new');
+    }
+    case 'confirm-sale': {
+      const lines = Object.entries(cart).filter(([, q]) => q > 0);
+      for (const [cid, q] of lines){ const it = itemById(cid); if (!it || q > it.qty) return toast(`${it ? it.name : 'A plant'}: not enough stock.`); }
+      let total = 0;
+      lines.forEach(([cid, q]) => { const it = itemById(cid); total += q * it.price; moveStock(it, 'sale', q); });
+      if (!save()) return;
+      cart = {}; render(); return toast(`Sale recorded: ${peso(total)}`);
+    }
+    case 'account': {
+      sheet(`<h2>Account settings</h2>
+        <label class="f">Store name<input class="input" id="a-store" maxlength="40" value="${esc(S.profile.store)}"></label>
+        <label class="f">Your name<input class="input" id="a-owner" maxlength="30" value="${esc(S.profile.owner)}"></label>
+        <div id="a-err"></div><div class="btn-row"><button class="btn ghost" data-act="close-sheet">Cancel</button><button class="btn" id="a-ok">Save</button></div>`);
+      $('#a-ok').onclick = () => { const s = $('#a-store').value.trim(), o = $('#a-owner').value.trim();
+        if (!s || !o){ $('#a-err').innerHTML = '<div class="err">Both fields are required.</div>'; return; }
+        S.profile = {store:s, owner:o}; save(); closeSheet(); render(); toast('Saved.'); };
+      return;
+    }
+    case 'backup':
+      sheet(`<h2>Backup &amp; restore</h2><p class="sub" style="font-size:15px;margin:0">Your plants and sales are stored only on this phone. Save a backup file regularly, for example to Google Drive.</p>
+        <button class="btn" id="b-save">${ic('backup','sm')} Save backup file</button>
+        <button class="btn ghost" id="b-load">Restore from backup file</button><div id="b-msg"></div>`);
+      $('#b-save').onclick = exportBackup;
+      $('#b-load').onclick = () => { $('#pick-backup').value = ''; $('#pick-backup').click(); };
+      return;
+    case 'help':
+      return sheet(`<h2>Help &amp; support</h2><div style="line-height:1.7;display:flex;flex-direction:column;gap:10px">
+        <div><b>Check stock with a photo.</b> Tap Scan, photograph the plant, and FloraTrack identifies it and shows how many you have.</div>
+        <div><b>Customer shows a plant you don't stock?</b> Scan it. FloraTrack lists similar-looking plants you have: same genus or family, or plants the photo could also be.</div>
+        <div><b>Add a new plant.</b> On the scan result tap Add to inventory, or in Inventory tap Add plant, take a photo, then Fill in name from photo.</div>
+        <div><b>Record sales.</b> Use New sale for several plants at once, or Sell on a plant's page.</div>
+        <div class="sub">Scans match your stock by scientific name and family, so keep those filled in. Identification needs internet; your stock list works offline.</div></div>
+        <button class="btn" data-act="close-sheet">Got it</button>`);
+    case 'about':
+      return sheet(`<div style="display:flex;gap:14px;align-items:center"><span class="art s64" style="border-radius:50%">${plantSVG('about','Indoor','monstera')}</span><div><h2>FloraTrack</h2><div class="sub">Version 2.1</div></div></div>
+        <p style="line-height:1.7;margin:0">A CNN-powered plant identification and inventory management system for small-scale plant vendors. Plant identification by the Pl@ntNet API (deep-learning image recognition). Descriptions from Wikipedia.</p><button class="btn" data-act="close-sheet">Close</button>`);
+    case 'reset':
+      return confirmSheet('Reset app data?', 'This deletes all plants, sales and your store profile from this phone. Save a backup first if you may need them.', 'Delete everything', () => {
+        S = emptyState(); save(); cart = {}; go('welcome'); });
+  }
+});
+// tap outside a bottom sheet closes it
+document.addEventListener('click', e => { if (e.target.classList && e.target.classList.contains('sheet-bg')) closeSheet(); });
+
+// ---------- backup ----------
+function exportBackup(){
+  const name = `floratrack-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  const content = JSON.stringify({app:'FloraTrack', version:1, savedAt:Date.now(), data:S});
+  if (window.AndroidBridge && AndroidBridge.saveFile){
+    const ok = AndroidBridge.saveFile(name, 'application/json', content);
+    $('#b-msg').innerHTML = ok ? '<div class="info">Choose where to save the backup (e.g. Google Drive).</div>' : '<div class="err">Could not create the backup file.</div>';
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], {type:'application/json'})); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  $('#b-msg').innerHTML = '<div class="info">Backup downloaded.</div>';
+}
+$('#pick-backup').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try{
+    const parsed = JSON.parse(await f.text());
+    const data = parsed.data || parsed;
+    if (!Array.isArray(data.items) || !Array.isArray(data.moves)) throw new Error('bad');
+    confirmSheet('Restore backup?', `This replaces the data on this phone with the backup (${data.items.length} plants, ${data.moves.length} records).`, 'Restore', () => {
+      S = {profile:data.profile || S.profile, items:data.items, moves:data.moves}; save(); toast('Backup restored.'); go('home'); });
+  }catch(err){ toast('That file is not a FloraTrack backup.'); }
+});
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+if (!location.hash) location.replace('#/splash');
+render();
+</script>
+</body>
+</html>
