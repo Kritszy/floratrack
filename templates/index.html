@@ -29,7 +29,7 @@
   button{cursor:pointer;}
   :focus-visible{outline:3px solid var(--sprout); outline-offset:2px;}
   .app{width:100%; max-width:480px; min-height:100vh; background:var(--paper); position:relative;}
-  .screen{padding-bottom:104px; animation:enter .18s ease-out;}
+  .screen{padding-bottom:calc(140px + env(safe-area-inset-bottom)); animation:enter .18s ease-out;}
   .screen.no-nav{padding-bottom:28px;}
   @keyframes enter{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
   .pad{padding:18px 16px; display:flex; flex-direction:column; gap:16px;}
@@ -129,7 +129,7 @@
   .chip.on{background:var(--canopy); border-color:var(--canopy); color:#fff;}
   .chip .n{font-size:11px; background:rgba(0,0,0,.08); border-radius:10px; padding:1px 7px;}
   .chip.on .n{background:rgba(255,255,255,.2);}
-  .fab{position:fixed; right:max(16px, calc(50% - 240px + 16px)); bottom:104px; height:56px; padding:0 20px 0 16px; border-radius:28px; border:0; background:var(--leaf); color:#fff; display:flex; align-items:center; gap:8px; font-weight:700; box-shadow:0 8px 20px rgba(46,125,50,.35); z-index:6;}
+  .fab{position:fixed; right:max(16px, calc(50% - 240px + 16px)); bottom:calc(130px + env(safe-area-inset-bottom)); height:56px; padding:0 20px 0 16px; border-radius:28px; border:0; background:var(--leaf); color:#fff; display:flex; align-items:center; gap:8px; font-weight:700; box-shadow:0 8px 20px rgba(46,125,50,.35); z-index:6;}
 
   /* buttons + forms */
   .btn{border:0; border-radius:var(--r-md); padding:15px; background:var(--leaf); color:#fff; font-weight:700; width:100%; display:flex; align-items:center; justify-content:center; gap:8px;}
@@ -233,6 +233,12 @@
   /* profile */
   .profile-head{text-align:center; padding-bottom:26px;}
   .profile-head .avatar{width:88px; height:88px; font-size:36px; margin:8px auto 10px;}
+  .avatar.photo{background-size:cover; background-position:center; color:transparent;}
+  .avatar-wrap{position:relative; width:96px; margin:8px auto 10px; display:block; background:none; border:0; padding:0;}
+  .avatar-wrap .avatar{width:96px; height:96px; font-size:40px; margin:0; box-shadow:0 0 0 4px rgba(255,255,255,.25);}
+  .avatar-wrap .cam{position:absolute; right:-2px; bottom:2px; width:32px; height:32px; border-radius:50%; background:var(--white); color:var(--leaf); display:grid; place-items:center; box-shadow:0 2px 8px rgba(0,0,0,.25);}
+  .avatar-wrap .cam svg{width:17px; height:17px;}
+  .torch-on{background:rgba(246,196,83,.9) !important; color:#3A2A00 !important;}
   .menu-list{background:var(--white); border-radius:var(--r-lg); overflow:hidden; box-shadow:var(--shadow);}
   .menu-list button{display:flex; align-items:center; gap:14px; width:100%; padding:16px; background:none; border:0; border-bottom:1px solid var(--line); text-align:left; font-weight:600;}
   .menu-list button:last-child{border-bottom:0;}
@@ -274,6 +280,23 @@
   .empty{text-align:center; color:var(--muted); padding:22px 16px; display:flex; flex-direction:column; align-items:center; gap:6px;}
   .empty .art{width:120px; height:120px; border-radius:50%; margin-bottom:8px;}
   .empty b{color:var(--ink); font-family:var(--display); font-size:18px;}
+  /* flower colors + store logo */
+  .cdot{width:12px; height:12px; border-radius:50%; display:inline-block; flex:none; box-shadow:inset 0 0 0 1px rgba(0,0,0,.18); vertical-align:-1px;}
+  .ctag{background:#F4EEF6; color:#5B3A6B;}
+  .ctag .cdot{width:10px; height:10px;}
+  .swatches{display:flex; flex-wrap:wrap; gap:8px;}
+  .sw{display:inline-flex; align-items:center; gap:7px; padding:8px 12px; border-radius:999px; border:1.5px solid var(--line); background:var(--white); font:inherit; font-size:14px; color:var(--ink);}
+  .sw.on{border-color:var(--leaf); background:#E3F1E0; font-weight:700;}
+  .sw .cdot{width:16px; height:16px;}
+  .logo{width:44px; height:44px; border-radius:14px; background:var(--sprout) center/cover no-repeat; color:var(--canopy); display:grid; place-items:center; flex:none; overflow:hidden; border:0; padding:0;}
+  .logo.img{background-color:#fff;}
+  .brandbar{display:flex; align-items:center; gap:10px; flex:1; min-width:0; margin:0 10px; background:none; border:0; color:inherit; padding:0; text-align:left;}
+  .brandbar b{font-family:var(--display); font-size:18px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .logo-edit{display:flex; align-items:center; gap:14px;}
+  .logo-edit .logo{width:80px; height:80px; border-radius:22px; box-shadow:inset 0 0 0 1px var(--line);}
+  .variants{display:flex; flex-direction:column;}
+  .variants button{display:flex; align-items:center; gap:10px; padding:11px 0; border:0; border-bottom:1px solid var(--line); background:none; text-align:left; font:inherit; color:var(--ink);}
+  .variants button:last-child{border-bottom:0;}
   canvas{display:none;}
   @media (prefers-reduced-motion:reduce){*{animation:none !important; transition:none !important;}}
 </style>
@@ -284,6 +307,7 @@
 <div id="overlay"></div>
 <input type="file" id="pick-gallery" accept="image/*" hidden>
 <input type="file" id="pick-camera" accept="image/*" capture="environment" hidden>
+<input type="file" id="pick-logo" accept="image/*" hidden>
 <input type="file" id="pick-backup" accept=".json,application/json" hidden>
 <canvas id="canvas"></canvas>
 
@@ -317,6 +341,7 @@ const ICONS = {
   info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/>',
   calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
   close:'<path d="M6 6l12 12M18 6 6 18"/>', check:'<path d="m5 12 5 5 9-10"/>',
+  flash:'<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
   flip:'<path d="M4 9a8 8 0 0 1 14-3l2 2M20 15a8 8 0 0 1-14 3l-2-2"/><path d="M20 4v4h-4M4 20v-4h4"/>',
   sparkle:'<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>',
   trend:'<path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
@@ -428,13 +453,69 @@ const levelTag = it => { const [c, l] = LEVEL[level(it)]; return `<span class="t
 const meter = it => { const cap = Math.max(it.low * 3, it.qty, 1); return `<div class="meter"><i style="width:${Math.max(4, it.qty / cap * 100)}%;background:${LEVEL[level(it)][2]}"></i></div>`; };
 const itemById = id => S.items.find(i => i.id === id);
 
+// ---------- flower color variations ----------
+// Picking from a fixed list keeps spellings consistent ("Red", never "red " or "Rd").
+const COLORS = {Red:'#D93A3A', Pink:'#F28BB0', White:'#FFFFFF', Yellow:'#F5C842', Orange:'#F08A2C', Peach:'#F7B98E', Purple:'#7E4BB0',
+  Lavender:'#B9A2E0', Blue:'#4A7BD8', Cream:'#F3E9C8', Green:'#7BC043', Mixed:'conic-gradient(#D93A3A 0 25%,#F5C842 0 50%,#F28BB0 0 75%,#FFFFFF 0)'};
+/** "  light PINK " -> "Light Pink"; uses the list spelling when the color is on the list. */
+function normColor(v){
+  const s = String(v || '').trim().replace(/\s+/g, ' ');
+  if (!s) return '';
+  return Object.keys(COLORS).find(c => c.toLowerCase() === s.toLowerCase()) || s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+function colorDot(c){
+  let bg = COLORS[c];
+  if (!bg){ const css = String(c).toLowerCase().replace(/[^a-z]/g, ''); bg = window.CSS && CSS.supports('color', css) ? css : 'linear-gradient(135deg,#ddd,#888)'; }
+  return `<i class="cdot" style="background:${bg}"></i>`;
+}
+const colorTag = it => it.color ? `<span class="tag ctag">${colorDot(it.color)}${esc(it.color)}</span>` : '';
+/** Plant name with its color, e.g. "Rose (Red)". */
+const fullName = it => it.color ? `${it.name} (${it.color})` : it.name;
+/** Other colors of the same plant (same scientific name or same plant name). */
+const variantsOf = it => S.items.filter(i => i.id !== it.id && ((i.sci && it.sci && i.sci.trim().toLowerCase() === it.sci.trim().toLowerCase()) || i.name.trim().toLowerCase() === it.name.trim().toLowerCase()));
+const nameKey = it => (it.name + ' ' + (it.color || '') + ' ' + it.category + ' ' + (it.sci || '')).toLowerCase();
+
+// ---------- profile photo ----------
+/** Owner's photo, or the first letter of the name when there is no photo. */
+function avatarHTML(tag = 'span', attrs = ''){
+  const p = S.profile || {};
+  return p.photo ? `<${tag} class="avatar photo" style="background-image:url('${p.photo}')" ${attrs}></${tag}>`
+                 : `<${tag} class="avatar" ${attrs}>${esc((p.owner || '?')[0].toUpperCase())}</${tag}>`;
+}
+/** Square 256px crop from the middle of the photo. */
+async function makeAvatar(blob){
+  const bmp = await createImageBitmap(blob);
+  const side = Math.min(bmp.width, bmp.height), N = 256;
+  const c = document.createElement('canvas'); c.width = c.height = N;
+  c.getContext('2d').drawImage(bmp, (bmp.width - side) / 2, (bmp.height - side) / 2, side, side, 0, 0, N, N);
+  return c.toDataURL('image/jpeg', .85);
+}
+function photoSheet(){
+  sheet(`<h2>Profile photo</h2>
+    <div class="logo-edit">${avatarHTML('span', 'style="width:80px;height:80px;font-size:34px;flex:none"')}<p class="sub" style="margin:0;font-size:14.5px">Shown on your profile and at the top of the Home screen.</p></div>
+    <div class="btn-row"><button class="btn" data-act="avatar-camera">${ic('camera','sm')} Take photo</button><button class="btn soft" data-act="avatar-gallery">${ic('image','sm')} Gallery</button></div>
+    ${S.profile.photo ? '<button class="btn ghost" data-act="avatar-remove">Remove photo</button>' : ''}`);
+}
+
+// ---------- store logo ----------
+const logoHTML = (cls = 'logo') => S.profile?.logo ? `<span class="${cls} img" style="background-image:url('${S.profile.logo}')"></span>` : `<span class="${cls}">${ic('leaf')}</span>`;
+/** Fits the logo into a 256x256 PNG (keeps transparency, nothing is cropped). */
+async function makeLogo(file){
+  const bmp = await createImageBitmap(file);
+  const N = 256, k = Math.min(N / bmp.width, N / bmp.height);
+  const c = document.createElement('canvas'); c.width = c.height = N;
+  const w = bmp.width * k, h = bmp.height * k;
+  c.getContext('2d').drawImage(bmp, (N - w) / 2, (N - h) / 2, w, h);
+  return c.toDataURL('image/png');
+}
+
 /** Records a stock change. Returns an error message, or '' when it worked. */
 function moveStock(item, type, qty, note=''){
   if (!Number.isInteger(qty) || qty <= 0) return 'Enter a quantity greater than zero.';
   const change = type === 'sale' ? -qty : qty;
-  if (item.qty + change < 0) return `Only ${item.qty} ${esc(item.name)} left in stock.`;
+  if (item.qty + change < 0) return `Only ${item.qty} ${esc(fullName(item))} left in stock.`;
   item.qty += change; item.updatedAt = Date.now();
-  S.moves.push({id:uid(), itemId:item.id, name:item.name, type, qty:change, price:item.price, note, at:Date.now()});
+  S.moves.push({id:uid(), itemId:item.id, name:fullName(item), type, qty:change, price:item.price, note, at:Date.now()});
   return '';
 }
 
@@ -490,6 +571,10 @@ function stockMatches(matches){
   const top = ms[0];
   if (!top) return {exact:[], similar:[]};
   const exact = S.items.filter(it => it.sci && sciKey(it.sci) === sciKey(top.scientific_name));
+  // Other colors of the same plant count as the same plant even if their scientific name was left blank.
+  const names = new Set(exact.map(i => i.name.trim().toLowerCase()));
+  S.items.forEach(it => { if (!exact.includes(it) && names.has(it.name.trim().toLowerCase())) exact.push(it); });
+  exact.sort((a, b) => (b.qty > 0) - (a.qty > 0) || (a.color || '').localeCompare(b.color || ''));
   const used = new Set(exact.map(i => i.id));
   const similar = [];
   const add = (it, reason, score) => { if (used.has(it.id)) return; used.add(it.id); similar.push({it, reason, score}); };
@@ -540,7 +625,7 @@ function openDrawer(){
   const cur = (location.hash.split('/')[1] || 'home');
   $('#drawer-bg').innerHTML = `<div class="drawer" role="dialog" aria-label="Menu">
     <svg class="leaves" viewBox="0 0 200 200" aria-hidden="true"><path d="M150 200 C90 170 70 90 150 20 C230 90 210 170 150 200Z" fill="#B5E06C" opacity=".35"/><path d="M150 200 V30" stroke="#173F27" stroke-width="3"/></svg>
-    <div class="brand"><span class="avatar" style="background:var(--sprout)">${ic('leaf')}</span><div><b>FloraTrack</b><div style="font-size:13px;opacity:.75">${esc(S.profile?.store || 'Track. Grow. Manage.')}</div></div></div>
+    <div class="brand">${logoHTML()}<div><b>FloraTrack</b><div style="font-size:13px;opacity:.75">${esc(S.profile?.store || 'Track. Grow. Manage.')}</div></div></div>
     ${DRAWER.map(([r,i,l]) => `<button class="d ${cur===r?'on':''}" data-go="${r}">${ic(i)}${l}</button>`).join('')}
   </div>`;
   $('#drawer-bg').classList.add('open');
@@ -555,14 +640,28 @@ $('#drawer-bg').addEventListener('click', e => {
 // =========================================================================
 //  SCREENS
 // =========================================================================
-let invFilter = 'All', invQuery = '', homeQuery = '';
+let invFilter = 'All', invQuery = '', homeQuery = '', invColor = '';
 let cart = {};
 let scan = {blob:null, url:null, organ:'auto', data:null, error:null, busy:false};
 let draft = null;          // Add/Edit form state
 let reportDays = 30;
 let stream = null, facing = 'environment';
 
-function stopCamera(){ if (stream){ stream.getTracks().forEach(t => t.stop()); stream = null; } }
+function stopCamera(){ torchOn = false; if (stream){ stream.getTracks().forEach(t => t.stop()); stream = null; } }
+let torchOn = false;
+/** Turns the phone's flashlight on/off while the live camera is open (Chrome / Android WebView). */
+async function toggleTorch(){
+  const track = stream && stream.getVideoTracks()[0];
+  const caps = track && track.getCapabilities ? track.getCapabilities() : {};
+  if (!track || !caps.torch){
+    return toast(facing === 'user' ? 'The front camera has no flash. Switch to the back camera.' : 'Flash is not available here. Use the camera button below, which has its own flash.');
+  }
+  try{
+    await track.applyConstraints({advanced:[{torch:!torchOn}]});
+    torchOn = !torchOn;
+    const b = $('#torch'); if (b){ b.classList.toggle('torch-on', torchOn); b.setAttribute('aria-pressed', torchOn); }
+  }catch(e){ toast('Could not turn on the flash.'); }
+}
 function salesByDay(days){
   const from = startOfDay(Date.now()) - (days - 1) * DAY;
   const sales = S.moves.filter(m => m.type === 'sale' && m.at >= from);
@@ -606,16 +705,16 @@ const screens = {
     const week = salesByDay(7), weekTotal = week.reduce((a, d) => a + d.v, 0), maxDay = Math.max(1, ...week.map(d => d.v));
     const recent = [...S.moves].sort((a, b) => b.at - a.at).slice(0, 5);
     const attention = it.filter(i => level(i) !== 'ok').sort((a, b) => a.qty - b.qty);
-    const results = q ? it.filter(i => (i.name + ' ' + i.category + ' ' + (i.sci||'')).toLowerCase().includes(q)) : [];
+    const results = q ? it.filter(i => nameKey(i).includes(q)) : [];
     const hour = new Date().getHours();
     const greet = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
     const total = Math.max(1, it.length);
     return `<div class="screen">
       <div class="canopy">${leavesBg()}
-        <div class="row"><button class="icon-btn" data-act="drawer" aria-label="Menu">${ic('menu')}</button><span style="flex:1"></span>
-          <button class="avatar" data-go="profile" aria-label="Profile">${esc(S.profile.owner[0].toUpperCase())}</button></div>
-        <div class="greet">${greet}, ${esc(S.profile.owner)}</div>
-        <div style="opacity:.8;margin-bottom:16px">${esc(S.profile.store)}</div>
+        <div class="row"><button class="icon-btn" data-act="drawer" aria-label="Menu">${ic('menu')}</button>
+          <button class="brandbar" data-act="logo" aria-label="Change store logo">${logoHTML()}<b>${esc(S.profile.store)}</b></button>
+          ${avatarHTML('button', 'data-go="profile" aria-label="Profile"')}</div>
+        <div class="greet" style="margin:16px 0 14px">${greet}, ${esc(S.profile.owner)}</div>
         <div class="search">${ic('search','sm')}<input id="home-q" placeholder="Search your plants" value="${esc(homeQuery)}" aria-label="Search your plants"></div>
         ${q ? '' : `<div class="health" style="margin-top:14px">
           <div style="display:flex;justify-content:space-between;font-size:13px"><span style="opacity:.85">Stock health</span><span><b class="num">${units}</b> <span style="opacity:.8">plants on hand</span></span></div>
@@ -640,7 +739,7 @@ const screens = {
           <button class="tile" data-go="reports"><span class="ic" style="background:var(--sky-bg);color:var(--sky)">${ic('chart')}</span>Reports</button>
         </div>
         ${attention.length ? `<div class="section-h"><h2>Needs restocking</h2><button class="link" data-act="filter-low">See all</button></div>
-          <div class="hscroll">${attention.slice(0, 8).map(i => `<button class="mini" data-item="${i.id}">${art(i, '')}<span><b>${esc(i.name)}</b><span class="sub">${i.qty} left · alert at ${i.low}</span></span>${levelTag(i)}</button>`).join('')}</div>` : ''}
+          <div class="hscroll">${attention.slice(0, 8).map(i => `<button class="mini" data-item="${i.id}">${art(i, '')}<span><b>${esc(fullName(i))}</b><span class="sub">${i.qty} left · alert at ${i.low}</span></span>${levelTag(i)}</button>`).join('')}</div>` : ''}
         <div class="section-h"><h2>Recent activity</h2>${S.moves.length ? '<button class="link" data-go="reports">All</button>' : ''}</div>
         ${recent.length ? `<div class="card" style="padding:4px 16px"><div class="feed">${recent.map(m => { const item = itemById(m.itemId);
           const label = m.type === 'sale' ? `Sold ${-m.qty} ${esc(m.name)}` : m.type === 'new' ? `${esc(m.name)} added` : `Restocked ${esc(m.name)}`;
@@ -656,14 +755,17 @@ const screens = {
     const counts = {All:S.items.length, 'In Stock':0, 'Low Stock':0, 'Out of Stock':0};
     S.items.forEach(i => counts[{ok:'In Stock', low:'Low Stock', out:'Out of Stock'}[level(i)]]++);
     const list = S.items
-      .filter(i => !q || (i.name + ' ' + i.category + ' ' + (i.sci||'')).toLowerCase().includes(q))
+      .filter(i => !q || nameKey(i).includes(q))
       .filter(i => invFilter === 'All' || ({'In Stock':'ok','Low Stock':'low','Out of Stock':'out'})[invFilter] === level(i))
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .filter(i => !invColor || (i.color || '') === invColor)
+      .sort((a, b) => a.name.localeCompare(b.name) || (a.color || '').localeCompare(b.color || ''));
+    const usedColors = [...new Set(S.items.map(i => i.color).filter(Boolean))].sort();
     return `<div class="screen">
       <div class="topbar"><button class="icon-btn" data-act="drawer" aria-label="Menu">${ic('menu')}</button><h1>Inventory</h1><span style="width:42px"></span></div>
       <div class="pad">
         <div class="search">${ic('search','sm')}<input id="inv-q" placeholder="Search plant, category..." value="${esc(invQuery)}" aria-label="Search inventory"></div>
         <div class="chips">${Object.keys(counts).map(f => `<button class="chip ${invFilter===f?'on':''}" data-filter="${f}">${f}<span class="n">${counts[f]}</span></button>`).join('')}</div>
+        ${usedColors.length ? `<div class="chips" aria-label="Filter by flower color"><button class="chip ${invColor ? '' : 'on'}" data-act="color-filter" data-color="">All colors</button>${usedColors.map(c => `<button class="chip ${invColor===c?'on':''}" data-act="color-filter" data-color="${esc(c)}">${colorDot(c)} ${esc(c)}</button>`).join('')}</div>` : ''}
         ${S.items.length === 0 ? emptyBox('inv-empty', 'No plants yet', 'Add the plants you sell, or scan one to add it with a photo.', '<button class="btn" style="width:auto;padding:12px 20px" data-act="new-plant">Add your first plant</button>')
           : list.length ? `<div class="list">${list.map(itemRow).join('')}</div>` : '<div class="sub" style="text-align:center;padding:24px">No plants match this filter.</div>'}
       </div>
@@ -676,13 +778,14 @@ const screens = {
     if (!it) return `<div class="screen">${topbar('Plant Details','inventory')}<div class="pad">${emptyBox('gone','Plant not found','It may have been deleted.')}</div></div>${nav('inventory')}`;
     const hist = S.moves.filter(m => m.itemId === id).sort((a, b) => b.at - a.at);
     const sold = -hist.filter(m => m.type === 'sale').reduce((a, m) => a + m.qty, 0);
+    const vars = variantsOf(it).sort((a, b) => (a.color || '').localeCompare(b.color || ''));
     return `<div class="screen">
       <div class="banner">${art(it, '')}<div class="bar-top"><button class="icon-btn" data-back="inventory" aria-label="Back">${ic('back')}</button>
         <button class="icon-btn" data-act="edit" data-id="${it.id}" aria-label="Edit plant">${ic('edit')}</button></div></div>
       <div class="card sheet-card">
         <div style="display:flex;gap:12px;align-items:flex-start">
           <div style="flex:1;min-width:0"><h1 style="font-size:24px">${esc(it.name)}</h1>${it.sci ? `<div class="sub" style="font-style:italic;font-size:14px">${esc(it.sci)}</div>` : ''}
-            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">${levelTag(it)}<span class="tag" style="background:var(--mist);color:var(--canopy)">${esc(it.category)}</span>${it.care ? `<span class="tag" style="background:var(--sky-bg);color:var(--sky)">${esc(it.care)} care</span>` : ''}</div></div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">${levelTag(it)}${colorTag(it)}<span class="tag" style="background:var(--mist);color:var(--canopy)">${esc(it.category)}</span>${it.care ? `<span class="tag" style="background:var(--sky-bg);color:var(--sky)">${esc(it.care)} care</span>` : ''}</div></div>
           <div style="text-align:right"><div class="stock-big" style="color:${level(it)==='out'?'var(--red)':'var(--canopy)'}">${it.qty}</div><div class="sub">in stock</div></div>
         </div>
         <div style="margin:14px 0 4px">${meter(it)}</div>
@@ -696,6 +799,9 @@ const screens = {
           <div class="fact"><small>Family</small><b>${esc(it.family || '—')}</b></div>
           <div class="fact"><small>Total sold</small><b>${sold}</b></div>
         </div>
+        ${it.color || vars.length || /flower/i.test(it.category) ? `<div class="card"><div class="section-h" style="margin-bottom:${vars.length ? 4 : 0}px"><div style="font-weight:700">${vars.length ? 'Other colors in stock' : 'Color variations'}</div><button class="link" data-act="add-variant" data-id="${it.id}">+ Add color</button></div>
+          ${vars.length ? `<div class="variants">${vars.map(v => `<button data-item="${v.id}">${colorDot(v.color || 'none')}<span style="flex:1;font-weight:600">${esc(v.color || 'No color set')}</span><b class="num" style="color:${level(v)==='out'?'var(--red)':'var(--canopy)'}">${v.qty}</b><span class="sub">in stock</span></button>`).join('')}</div>`
+            : '<div class="sub" style="margin-top:4px">Sell this plant in more than one flower color? Add each color so its stock is counted separately.</div>'}</div>` : ''}
         ${it.desc ? `<div><h2 style="font-size:18px;margin-bottom:6px">About</h2><div style="line-height:1.6;color:#33413A">${esc(it.desc)}</div></div>` : ''}
         <h2 style="font-size:18px">Stock history</h2>
         ${hist.length ? `<div class="card" style="padding:4px 16px">${hist.map(m => `<div class="history"><span class="q" style="background:${m.qty > 0 ? '#E3F1E0' : 'var(--red-bg)'};color:${m.qty > 0 ? 'var(--leaf)' : 'var(--red)'}">${m.qty > 0 ? '+' : ''}${m.qty}</span>
@@ -708,9 +814,10 @@ const screens = {
   edit(id){
     const existing = id && id !== 'new' ? itemById(id) : null;
     if (!draft || draft.forId !== (existing ? existing.id : 'new')){
-      draft = existing ? {...existing, forId:existing.id} : {forId:'new', id:'draft-' + uid(), name:'', sci:'', family:'', category:CATEGORIES[0], care:'Easy', qty:'', price:'', low:5, desc:'', photo:null, blob:null};
+      draft = existing ? {...existing, color:existing.color || '', forId:existing.id} : {forId:'new', id:'draft-' + uid(), name:'', sci:'', family:'', color:'', category:CATEGORIES[0], care:'Easy', qty:'', price:'', low:5, desc:'', photo:null, blob:null};
     }
     const d = draft;
+    const otherColor = d.colorOther || (d.color && !COLORS[d.color]);
     return `<div class="screen no-nav">${topbar(existing ? 'Edit Plant' : 'Add Plant', existing ? 'item/' + existing.id : 'inventory')}
       <div class="pad">
         <div class="group" style="padding:12px">
@@ -732,6 +839,15 @@ const screens = {
             <label class="f">Category<select class="input" id="e-cat">${CATEGORIES.map(c => `<option ${c===d.category?'selected':''}>${c}</option>`).join('')}</select></label>
             <label class="f">Family<input class="input" id="e-family" maxlength="40" value="${esc(d.family)}" placeholder="e.g. Araceae"></label>
           </div>
+        </div>
+        <div class="group">
+          <h3>Flower color <span class="sub" style="font-weight:400;font-size:13px">· each color has its own stock</span></h3>
+          <div class="swatches" role="group" aria-label="Flower color">
+            <button type="button" class="sw ${!d.color && !otherColor ? 'on' : ''}" data-act="pick-color" data-color="">None</button>
+            ${Object.keys(COLORS).map(c => `<button type="button" class="sw ${d.color === c && !otherColor ? 'on' : ''}" data-act="pick-color" data-color="${c}">${colorDot(c)}${c}</button>`).join('')}
+            <button type="button" class="sw ${otherColor ? 'on' : ''}" data-act="pick-color" data-color="__other">Other...</button>
+          </div>
+          ${otherColor ? `<label class="f">Color name<input class="input" id="e-color" maxlength="24" value="${esc(d.color)}" placeholder="e.g. Light Pink, Red-White"></label>` : ''}
         </div>
         <div class="group">
           <h3>Stock &amp; price</h3>
@@ -757,7 +873,7 @@ const screens = {
   // 4. Scanner (camera)
   scan(){
     return `<div class="scanner">
-      <div class="topbar"><button class="icon-btn" data-back="home" aria-label="Back">${ic('back')}</button><h1>Identify Plant</h1><button class="icon-btn" data-act="flip" aria-label="Switch camera">${ic('flip')}</button></div>
+      <div class="topbar"><button class="icon-btn" data-back="home" aria-label="Back">${ic('back')}</button><h1>Identify Plant</h1><button class="icon-btn" id="torch" data-act="torch" aria-label="Flash" aria-pressed="false">${ic('flash')}</button><button class="icon-btn" data-act="flip" aria-label="Switch camera">${ic('flip')}</button></div>
       <div class="viewfinder"><video id="video" autoplay playsinline muted></video><div class="vf-msg" id="vf-msg">Starting camera...</div><div class="frame"><i></i><i></i><i></i><i></i></div></div>
       <div class="organs" role="group" aria-label="What does the photo show?">${['auto','leaf','flower','fruit','bark'].map(o => `<button class="chip ${scan.organ===o?'on':''}" data-organ="${o}">${o === 'auto' ? 'Auto' : cap(o)}</button>`).join('')}</div>
       <div class="shutter-row">
@@ -792,7 +908,7 @@ const screens = {
     const stockCard = (it, reason) => `<button class="stock-card ${reason ? '' : 'match'}" data-item="${it.id}">
         ${art(it, 's64')}
         <div style="flex:1;min-width:0"><div style="font-weight:700">${esc(it.name)}</div><div class="sub">${peso(it.price)} · ${esc(it.category)}</div>
-          <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">${reason ? `<span class="tag why">${esc(reason)}</span>` : ''}${levelTag(it)}</div></div>
+          <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">${reason ? `<span class="tag why">${esc(reason)}</span>` : ''}${colorTag(it)}${levelTag(it)}</div></div>
         <div style="text-align:center"><div class="stock-big" style="font-size:30px;color:${level(it)==='out' ? 'var(--red)' : 'var(--canopy)'}">${it.qty}</div><div class="sub">in stock</div></div></button>`;
     let stockHtml;
     if (available.length){
@@ -807,9 +923,10 @@ const screens = {
     return `<div class="screen">${hero(`<h1>${esc(displayName(top))}</h1>`, `<div class="sci">${esc(top.scientific_name)}</div>`, ringConf(top.confidence))}
       <div class="pad">
       ${low ? '<div class="warn"><b>Not very sure.</b> Try a closer, well-lit photo of a leaf or flower, and pick what it shows on the scan screen.</div>' : ''}
-      <div class="section-h"><h2>In your stock</h2></div>
+      <div class="section-h"><h2>In your stock</h2>${exact.length > 1 ? `<span class="sub">${exact.length} colors</span>` : ''}</div>
+      ${exact.length > 1 ? '<div class="sub" style="margin-top:-6px">Tap a color to sell or add stock.</div>' : ''}
       ${stockHtml}
-      ${exact.length ? '' : `<button class="btn" data-act="add-from-scan">${ic('plus','sm')} Add to inventory</button>`}
+      ${exact.length ? `<button class="btn ghost" data-act="add-from-scan">${ic('plus','sm')} Add another color</button>` : `<button class="btn" data-act="add-from-scan">${ic('plus','sm')} Add to inventory</button>`}
       <h2 style="font-size:18px;margin-top:4px">About this plant</h2>
       <div class="facts"><div class="fact"><small>Family</small><b>${esc(top.family || '—')}</b></div><div class="fact"><small>Genus</small><b>${esc(top.genus || '—')}</b></div></div>
       ${(top.common_names||[]).length > 1 ? `<div class="sub">Also called ${esc(top.common_names.slice(1,4).join(', '))}</div>` : ''}
@@ -823,16 +940,16 @@ const screens = {
 
   // 9. New sale
   sale(){
-    const items = S.items.filter(i => i.qty > 0 || cart[i.id]).sort((a, b) => a.name.localeCompare(b.name));
+    const items = S.items.filter(i => i.qty > 0 || cart[i.id]).sort((a, b) => a.name.localeCompare(b.name) || (a.color || '').localeCompare(b.color || ''));
     const count = Object.values(cart).reduce((a, b) => a + b, 0);
     const total = items.reduce((a, i) => a + (cart[i.id] || 0) * i.price, 0);
     return `<div class="screen" style="padding-bottom:220px">${topbar('New Sale','home')}
       <div class="pad">
         <div class="search">${ic('search','sm')}<input id="sale-q" placeholder="Search plant..." aria-label="Search plants to sell"></div>
         <div id="sale-list" class="list">
-        ${items.length ? items.map(i => `<div class="row-item" data-name="${esc(i.name.toLowerCase())}" style="${cart[i.id] ? 'box-shadow:inset 0 0 0 2px var(--leaf),var(--shadow)' : ''}">${art(i)}
-          <div class="t"><div class="name">${esc(i.name)}</div><div class="price">${peso(i.price)}</div><div class="sub">${i.qty} in stock</div></div>
-          <div class="qty"><button data-cart="${i.id}" data-d="-1" aria-label="One less ${esc(i.name)}">${ic('minus','sm')}</button><b>${cart[i.id] || 0}</b><button data-cart="${i.id}" data-d="1" aria-label="One more ${esc(i.name)}">${ic('plus','sm')}</button></div></div>`).join('')
+        ${items.length ? items.map(i => `<div class="row-item" data-name="${esc(nameKey(i))}" style="${cart[i.id] ? 'box-shadow:inset 0 0 0 2px var(--leaf),var(--shadow)' : ''}">${art(i)}
+          <div class="t"><div class="name">${esc(i.name)}</div><div class="price">${peso(i.price)}</div><div class="sub">${i.color ? `${colorDot(i.color)} ${esc(i.color)} · ` : ''}${i.qty} in stock</div></div>
+          <div class="qty"><button data-cart="${i.id}" data-d="-1" aria-label="One less ${esc(fullName(i))}">${ic('minus','sm')}</button><b>${cart[i.id] || 0}</b><button data-cart="${i.id}" data-d="1" aria-label="One more ${esc(fullName(i))}">${ic('plus','sm')}</button></div></div>`).join('')
           : emptyBox('sale-empty','Nothing to sell yet','Plants with stock appear here. Add stock in Inventory first.')}
         </div>
       </div>
@@ -865,7 +982,7 @@ const screens = {
         <div class="card"><div style="font-weight:700;margin-bottom:12px">Top selling plants</div>
           <div class="tops">${top.length ? top.map(([iid, t], k) => `<div class="r">${art(itemById(iid) || {id:iid, name:t.name}, 's44')}<div class="t"><span>${esc(t.name)}</span><div class="meter"><i style="width:${t.u / maxTop * 100}%;background:${k === 0 ? 'var(--leaf)' : '#8CC56A'}"></i></div></div><div style="text-align:right"><b class="num">${t.u}</b><div class="sub">${peso(t.v)}</div></div></div>`).join('') : '<div class="sub">No sales in this period.</div>'}</div></div>
         <div class="card"><div style="font-weight:700;margin-bottom:6px">Needs restocking</div>
-          ${S.items.filter(i => level(i) !== 'ok').map(i => `<button class="row-item" style="box-shadow:none;padding:8px 0;border-radius:0;border-bottom:1px solid var(--line)" data-item="${i.id}">${art(i, 's44')}<div class="t"><div class="name">${esc(i.name)}</div><div class="sub">${i.qty} left</div></div>${levelTag(i)}</button>`).join('') || '<div class="sub">All plants are well stocked.</div>'}</div>
+          ${S.items.filter(i => level(i) !== 'ok').map(i => `<button class="row-item" style="box-shadow:none;padding:8px 0;border-radius:0;border-bottom:1px solid var(--line)" data-item="${i.id}">${art(i, 's44')}<div class="t"><div class="name">${esc(fullName(i))}</div><div class="sub">${i.qty} left</div></div>${levelTag(i)}</button>`).join('') || '<div class="sub">All plants are well stocked.</div>'}</div>
       </div></div>${nav('home')}`;
   },
 
@@ -877,7 +994,7 @@ const screens = {
     return `<div class="screen">
       <div class="canopy profile-head">${leavesBg(.18)}
         <div class="row"><button class="icon-btn" data-act="drawer" aria-label="Menu">${ic('menu')}</button><span style="flex:1"></span></div>
-        <div class="avatar">${esc(p.owner[0].toUpperCase())}</div>
+        <button class="avatar-wrap" data-act="photo" aria-label="Change profile photo">${avatarHTML()}<span class="cam">${ic('camera')}</span></button>
         <h1 style="font-size:24px">${esc(p.owner)}</h1><div style="opacity:.8">${esc(p.store)}</div>
       </div>
       <div class="pad">
@@ -886,6 +1003,8 @@ const screens = {
         </div>
         <div class="menu-list">
           <button data-act="account"><span class="ic">${ic('settings','sm')}</span><span>Account settings</span>${ic('chev','sm')}</button>
+          <button data-act="photo"><span class="ic">${ic('user','sm')}</span><span>Profile photo</span>${ic('chev','sm')}</button>
+          <button data-act="logo"><span class="ic">${ic('image','sm')}</span><span>Store logo</span>${ic('chev','sm')}</button>
           <button data-act="backup"><span class="ic">${ic('backup','sm')}</span><span>Backup &amp; restore</span>${ic('chev','sm')}</button>
           <button data-act="help"><span class="ic">${ic('help','sm')}</span><span>Help &amp; support</span>${ic('chev','sm')}</button>
           <button data-act="about"><span class="ic">${ic('info','sm')}</span><span>About FloraTrack</span>${ic('chev','sm')}</button>
@@ -898,7 +1017,7 @@ const screens = {
 
 function itemRow(i){
   return `<button class="row-item" data-item="${i.id}">${art(i)}
-    <div class="t"><div class="name">${esc(i.name)}</div><div class="sub">${esc(i.category)} · <span class="price">${peso(i.price)}</span></div>${meter(i)}</div>
+    <div class="t"><div class="name">${esc(i.name)}</div><div class="sub">${i.color ? `${colorDot(i.color)} ${esc(i.color)} · ` : `${esc(i.category)} · `}<span class="price">${peso(i.price)}</span></div>${meter(i)}</div>
     <div class="qty-col"><b style="color:${level(i)==='out'?'var(--red)':'var(--canopy)'}">${i.qty}</b>${level(i) === 'ok' ? '<span class="sub">in stock</span>' : levelTag(i)}</div></button>`;
 }
 
@@ -981,11 +1100,12 @@ async function runScan(blob){
 function readDraftFields(){
   if (!draft) return;
   const v = id => $(id) ? $(id).value : undefined;
+  if ($('#e-color')) draft.color = $('#e-color').value;
   Object.assign(draft, {name:v('#e-name'), sci:v('#e-sci'), category:v('#e-cat'), care:v('#e-care'), qty:v('#e-qty') ?? draft.qty, price:v('#e-price'), low:v('#e-low'), family:v('#e-family'), desc:v('#e-desc')});
 }
 
 function stockSheet(item, type){
-  sheet(`<div style="display:flex;gap:12px;align-items:center">${art(item, 's56')}<div><h2>${type === 'sale' ? 'Record sale' : 'Add stock'}</h2><div class="sub" style="font-size:14px">${esc(item.name)} · ${item.qty} in stock</div></div></div>
+  sheet(`<div style="display:flex;gap:12px;align-items:center">${art(item, 's56')}<div><h2>${type === 'sale' ? 'Record sale' : 'Add stock'}</h2><div class="sub" style="font-size:14px">${esc(fullName(item))} · ${item.qty} in stock</div></div></div>
     <div class="sub" style="text-align:center">${type === 'sale' ? 'How many were sold?' : 'How many arrived?'}</div>
     <div class="stepper"><button data-step="-1" aria-label="Less">${ic('minus')}</button><input id="s-qty" inputmode="numeric" value="1" aria-label="Quantity"><button data-step="1" aria-label="More">${ic('plus')}</button></div>
     <label class="f">Note (optional)<input class="input" id="s-note" maxlength="60" placeholder="${type === 'sale' ? 'e.g. walk-in customer' : 'e.g. from supplier'}"></label>
@@ -996,7 +1116,7 @@ function stockSheet(item, type){
     const err = moveStock(item, type, /^\d+$/.test(raw) ? Number(raw) : NaN, $('#s-note').value.trim());
     if (err){ $('#s-err').innerHTML = `<div class="err">${err}</div>`; return; }
     if (!save()) return;
-    closeSheet(); render(); toast(type === 'sale' ? `Sale recorded: ${peso(Number(raw) * item.price)}` : `Added ${raw} to ${item.name}.`);
+    closeSheet(); render(); toast(type === 'sale' ? `Sale recorded: ${peso(Number(raw) * item.price)}` : `Added ${raw} to ${fullName(item)}.`);
   };
 }
 
@@ -1022,13 +1142,36 @@ document.addEventListener('click', async e => {
     case 'welcome': {
       const store = $('#w-store').value.trim(), owner = $('#w-owner').value.trim();
       if (!store || !owner){ $('#w-err').innerHTML = '<div class="err">Enter your store name and your name.</div>'; return; }
-      S.profile = {store, owner}; save(); return location.replace('#/home');
+      S.profile = {...(S.profile || {}), store, owner}; save(); return location.replace('#/home');
     }
     case 'new-plant': draft = null; return go('edit/new');
     case 'edit': draft = null; return go('edit/' + id);
     case 'sell': return stockSheet(item, 'sale');
     case 'restock': return stockSheet(item, 'in');
-    case 'delete': return confirmSheet('Delete plant?', `This removes <b>${esc(item.name)}</b> and its stock history from this phone. This cannot be undone.`, 'Delete', () => {
+    case 'color-filter': invColor = t.dataset.color; return render();
+    case 'pick-color': {
+      readDraftFields();
+      if (t.dataset.color === '__other'){ draft.colorOther = true; if (COLORS[draft.color]) draft.color = ''; }
+      else { draft.colorOther = false; draft.color = t.dataset.color; }
+      const y = window.scrollY; render(); window.scrollTo(0, y);
+      if (draft.colorOther) $('#e-color')?.focus();
+      return;
+    }
+    case 'add-variant': {
+      draft = {forId:'new', id:'draft-' + uid(), name:item.name, sci:item.sci || '', family:item.family || '', color:'', category:item.category, care:item.care || 'Easy',
+        qty:'', price:item.price, low:item.low, desc:item.desc || '', photo:null, blob:null};
+      return go('edit/new');
+    }
+    case 'logo': return logoSheet();
+    case 'photo': return photoSheet();
+    case 'avatar-camera': case 'avatar-gallery':
+      return pickPhoto(t.dataset.act === 'avatar-camera', async blob => {
+        const old = S.profile.photo; S.profile.photo = await makeAvatar(blob);
+        if (!save()){ S.profile.photo = old; return; }
+        render(); toast('Profile photo updated.'); });
+    case 'avatar-remove': delete S.profile.photo; save(); render(); return toast('Profile photo removed.');
+    case 'torch': return toggleTorch();
+    case 'delete': return confirmSheet('Delete plant?', `This removes <b>${esc(fullName(item))}</b> and its stock history from this phone. This cannot be undone.`, 'Delete', () => {
       S.items = S.items.filter(i => i.id !== id); S.moves = S.moves.filter(m => m.itemId !== id); save(); toast('Plant deleted.'); go('inventory'); });
     case 'photo-camera': case 'photo-gallery':
       readDraftFields();
@@ -1053,7 +1196,12 @@ document.addEventListener('click', async e => {
         : !(price !== '' && !isNaN(price) && Number(price) >= 0) ? 'Enter a valid price.'
         : !/^\d+$/.test(low) ? 'Enter the low-stock alert level (a whole number).' : '';
       if (err){ $('#e-err').innerHTML = `<div class="err">${err}</div>`; $('#e-err').scrollIntoView({block:'center'}); return; }
-      const fields = {name:d.name.trim(), sci:d.sci.trim(), family:d.family.trim(), category:d.category, care:d.care, price:Number(price), low:Number(low), desc:d.desc.trim(), photo:d.photo, updatedAt:Date.now()};
+      const color = normColor(d.color);
+      const twin = S.items.find(i => i.id !== existing?.id && i.name.trim().toLowerCase() === d.name.trim().toLowerCase() && (i.color || '') === color);
+      if (twin){ $('#e-err').innerHTML = `<div class="err"><b>${esc(fullName(twin))}</b> is already in your inventory. Open it and use Add stock instead, or pick a different color.</div>`; $('#e-err').scrollIntoView({block:'center'}); return; }
+      // Reuse the spelling already in the inventory ("rose" -> "Rose") so one plant never appears under two names.
+      const sameName = S.items.find(i => i.id !== existing?.id && i.name.trim().toLowerCase() === d.name.trim().toLowerCase());
+      const fields = {name:sameName ? sameName.name : d.name.trim(), sci:d.sci.trim() || sameName?.sci || '', family:d.family.trim(), color, category:d.category, care:d.care, price:Number(price), low:Number(low), desc:d.desc.trim(), photo:d.photo, updatedAt:Date.now()};
       let saved;
       if (existing){ Object.assign(existing, fields); saved = existing; }
       else {
@@ -1062,22 +1210,24 @@ document.addEventListener('click', async e => {
         if (Number(qty) > 0){ saved.qty = Number(qty); S.moves.push({id:uid(), itemId:saved.id, name:saved.name, type:'new', qty:Number(qty), price:saved.price, note:'', at:Date.now()}); }
       }
       if (!save()) return;
-      draft = null; toast(existing ? 'Changes saved.' : `${saved.name} added to inventory.`);
+      draft = null; toast(existing ? 'Changes saved.' : `${fullName(saved)} added to inventory.`);
       location.replace('#/item/' + saved.id); return;
     }
     case 'scan-gallery': return pickPhoto(false, runScan);
     case 'scan-camera-app': return pickPhoto(true, runScan);
-    case 'flip': facing = facing === 'environment' ? 'user' : 'environment'; return startScanner();
+    case 'flip': facing = facing === 'environment' ? 'user' : 'environment'; $('#torch')?.classList.remove('torch-on'); return startScanner();
     case 'retry-scan': return runScan(scan.blob);
     case 'add-from-scan': {
       const m = (scan.data && scan.data.matches || [])[0];
-      draft = {forId:'new', id:'draft-' + uid(), name:m ? displayName(m) : '', sci:m ? m.scientific_name : '', family:m?.family || '', category:CATEGORIES[0], care:'Easy', qty:'', price:'', low:5,
+      const same = m ? stockMatches(scan.data.matches).exact[0] : null;   // adding another color of a plant already in stock
+      draft = {forId:'new', id:'draft-' + uid(), name:same ? same.name : m ? displayName(m) : '', sci:m ? m.scientific_name : '', family:m?.family || '', color:'',
+        category:same ? same.category : CATEGORIES[0], care:same?.care || 'Easy', qty:'', price:same ? same.price : '', low:same ? same.low : 5,
         desc:(scan.data?.description || '').slice(0, 600), photo:await thumb(scan.blob), blob:null};
       return go('edit/new');
     }
     case 'confirm-sale': {
       const lines = Object.entries(cart).filter(([, q]) => q > 0);
-      for (const [cid, q] of lines){ const it = itemById(cid); if (!it || q > it.qty) return toast(`${it ? it.name : 'A plant'}: not enough stock.`); }
+      for (const [cid, q] of lines){ const it = itemById(cid); if (!it || q > it.qty) return toast(`${it ? fullName(it) : 'A plant'}: not enough stock.`); }
       let total = 0;
       lines.forEach(([cid, q]) => { const it = itemById(cid); total += q * it.price; moveStock(it, 'sale', q); });
       if (!save()) return;
@@ -1090,7 +1240,7 @@ document.addEventListener('click', async e => {
         <div id="a-err"></div><div class="btn-row"><button class="btn ghost" data-act="close-sheet">Cancel</button><button class="btn" id="a-ok">Save</button></div>`);
       $('#a-ok').onclick = () => { const s = $('#a-store').value.trim(), o = $('#a-owner').value.trim();
         if (!s || !o){ $('#a-err').innerHTML = '<div class="err">Both fields are required.</div>'; return; }
-        S.profile = {store:s, owner:o}; save(); closeSheet(); render(); toast('Saved.'); };
+        S.profile = {...S.profile, store:s, owner:o}; save(); closeSheet(); render(); toast('Saved.'); };
       return;
     }
     case 'backup':
@@ -1109,7 +1259,7 @@ document.addEventListener('click', async e => {
         <div class="sub">Scans match your stock by scientific name and family, so keep those filled in. Identification needs internet; your stock list works offline.</div></div>
         <button class="btn" data-act="close-sheet">Got it</button>`);
     case 'about':
-      return sheet(`<div style="display:flex;gap:14px;align-items:center"><span class="art s64" style="border-radius:50%">${plantSVG('about','Indoor','monstera')}</span><div><h2>FloraTrack</h2><div class="sub">Version 2.1</div></div></div>
+      return sheet(`<div style="display:flex;gap:14px;align-items:center"><span class="art s64" style="border-radius:50%">${plantSVG('about','Indoor','monstera')}</span><div><h2>FloraTrack</h2><div class="sub">Version 2.3</div></div></div>
         <p style="line-height:1.7;margin:0">A CNN-powered plant identification and inventory management system for small-scale plant vendors. Plant identification by the Pl@ntNet API (deep-learning image recognition). Descriptions from Wikipedia.</p><button class="btn" data-act="close-sheet">Close</button>`);
     case 'reset':
       return confirmSheet('Reset app data?', 'This deletes all plants, sales and your store profile from this phone. Save a backup first if you may need them.', 'Delete everything', () => {
@@ -1118,6 +1268,26 @@ document.addEventListener('click', async e => {
 });
 // tap outside a bottom sheet closes it
 document.addEventListener('click', e => { if (e.target.classList && e.target.classList.contains('sheet-bg')) closeSheet(); });
+
+// ---------- store logo ----------
+function logoSheet(){
+  sheet(`<h2>Store logo</h2>
+    <div class="logo-edit">${logoHTML()}<p class="sub" style="margin:0;font-size:14.5px">Shown at the top of the Home screen and in the menu. A square image or PNG with a clear background looks best.</p></div>
+    <button class="btn" id="l-pick">${ic('image','sm')} ${S.profile.logo ? 'Change logo' : 'Upload logo'}</button>
+    ${S.profile.logo ? '<button class="btn ghost" id="l-remove">Use default logo</button>' : ''}
+    <div id="l-msg"></div>`);
+  $('#l-pick').onclick = () => { $('#pick-logo').value = ''; $('#pick-logo').click(); };
+  $('#l-remove') && ($('#l-remove').onclick = () => { delete S.profile.logo; save(); render(); toast('Default logo restored.'); });
+}
+$('#pick-logo').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try{
+    const old = S.profile.logo;
+    S.profile.logo = await makeLogo(f);
+    if (!save()){ S.profile.logo = old; return; }
+    render(); toast('Logo updated.');
+  }catch(err){ toast('Could not read that image.'); }
+});
 
 // ---------- backup ----------
 function exportBackup(){
