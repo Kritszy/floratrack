@@ -298,6 +298,38 @@
   .variants button{display:flex; align-items:center; gap:10px; padding:11px 0; border:0; border-bottom:1px solid var(--line); background:none; text-align:left; font:inherit; color:var(--ink);}
   .variants button:last-child{border-bottom:0;}
   canvas{display:none;}
+
+  /* printable report (only visible on paper / PDF) */
+  #print-area{display:none;}
+  .check-row{display:flex; align-items:center; gap:12px; padding:12px 14px; border:1.5px solid var(--line); border-radius:var(--r-sm); font-weight:600; background:var(--paper);}
+  .check-row input{width:20px; height:20px; accent-color:var(--leaf);}
+  @media print{
+    @page{size:A4; margin:12mm;}
+    html, body{background:#fff !important; display:block !important;}
+    #app, #overlay, #drawer-bg, .toast, .nav{display:none !important;}
+    #print-area{display:block !important; color:#111; font-family:var(--body); font-size:10.5pt; line-height:1.35; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+    .rp-head{display:flex; align-items:center; gap:14px; border-bottom:3px solid #2E7D32; padding-bottom:10px; margin-bottom:14px;}
+    .rp-logo{width:54px; height:54px; border-radius:10px; background:#E3F1E0 center/contain no-repeat; flex:none;}
+    .rp-head h1{font-family:var(--display); font-size:19pt; margin:0; color:#173F27;}
+    .rp-head .meta{margin-left:auto; text-align:right; font-size:9pt; color:#444;}
+    .rp-sum{display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; margin:0 0 16px;}
+    .rp-sum div{border:1px solid #CFDCCB; border-radius:8px; padding:8px 10px; background:#F3F8F1;}
+    .rp-sum small{display:block; color:#555; font-size:8.5pt;}
+    .rp-sum b{font-size:13pt; color:#173F27;}
+    #print-area h2{font-size:12.5pt; color:#173F27; margin:16px 0 6px; font-family:var(--display);}
+    #print-area table{width:100%; border-collapse:collapse; font-size:9.5pt; page-break-inside:auto;}
+    #print-area tr{page-break-inside:avoid;}
+    #print-area thead{display:table-header-group;}
+    #print-area th{background:#2E7D32; color:#fff; text-align:left; padding:6px 7px; font-weight:600;}
+    #print-area td{padding:5px 7px; border-bottom:1px solid #DDE6DA;}
+    #print-area tbody tr:nth-child(even) td{background:#F7FAF5;}
+    #print-area .r{text-align:right; white-space:nowrap;}
+    #print-area tfoot td{font-weight:700; border-top:2px solid #2E7D32; border-bottom:0;}
+    #print-area .none{color:#666; font-style:italic; padding:6px 0;}
+    .rp-sign{display:flex; gap:40px; margin-top:34px; page-break-inside:avoid;}
+    .rp-sign div{flex:1; border-top:1px solid #333; padding-top:4px; font-size:9pt; color:#333;}
+    .rp-foot{margin-top:18px; font-size:8.5pt; color:#777; text-align:center;}
+  }
   @media (prefers-reduced-motion:reduce){*{animation:none !important; transition:none !important;}}
 </style>
 </head>
@@ -305,6 +337,7 @@
 <div class="app" id="app"></div>
 <div class="drawer-bg" id="drawer-bg"></div>
 <div id="overlay"></div>
+<div id="print-area"></div>
 <input type="file" id="pick-gallery" accept="image/*" hidden>
 <input type="file" id="pick-camera" accept="image/*" capture="environment" hidden>
 <input type="file" id="pick-logo" accept="image/*" hidden>
@@ -344,6 +377,7 @@ const ICONS = {
   flash:'<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
   flip:'<path d="M4 9a8 8 0 0 1 14-3l2 2M20 15a8 8 0 0 1-14 3l-2-2"/><path d="M20 4v4h-4M4 20v-4h4"/>',
   sparkle:'<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>',
+  print:'<path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/>',
   trend:'<path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
 };
 const ic = (n, cls='') => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]||''}</svg>`;
@@ -970,7 +1004,7 @@ const screens = {
     const top = Object.entries(sales.reduce((acc, m) => { (acc[m.itemId] = acc[m.itemId] || {name:m.name, u:0, v:0}); acc[m.itemId].u -= m.qty; acc[m.itemId].v -= m.qty * m.price; return acc; }, {}))
       .sort((a, b) => b[1].u - a[1].u).slice(0, 5);
     const maxTop = Math.max(1, ...top.map(t => t[1].u));
-    return `<div class="screen">${topbar('Reports','home')}
+    return `<div class="screen">${topbar('Reports','home', `<button class="icon-btn" data-act="print-report" aria-label="Print report">${ic('print')}</button>`)}
       <div class="pad">
         <div class="chips">${[[7,'7 days'],[30,'30 days'],[90,'90 days']].map(([v,l]) => `<button class="chip ${v===reportDays?'on':''}" data-range="${v}">${l}</button>`).join('')}</div>
         <div class="card" style="background:var(--canopy);color:#fff;position:relative;overflow:hidden">${leavesBg(.12)}
@@ -983,6 +1017,7 @@ const screens = {
           <div class="tops">${top.length ? top.map(([iid, t], k) => `<div class="r">${art(itemById(iid) || {id:iid, name:t.name}, 's44')}<div class="t"><span>${esc(t.name)}</span><div class="meter"><i style="width:${t.u / maxTop * 100}%;background:${k === 0 ? 'var(--leaf)' : '#8CC56A'}"></i></div></div><div style="text-align:right"><b class="num">${t.u}</b><div class="sub">${peso(t.v)}</div></div></div>`).join('') : '<div class="sub">No sales in this period.</div>'}</div></div>
         <div class="card"><div style="font-weight:700;margin-bottom:6px">Needs restocking</div>
           ${S.items.filter(i => level(i) !== 'ok').map(i => `<button class="row-item" style="box-shadow:none;padding:8px 0;border-radius:0;border-bottom:1px solid var(--line)" data-item="${i.id}">${art(i, 's44')}<div class="t"><div class="name">${esc(fullName(i))}</div><div class="sub">${i.qty} left</div></div>${levelTag(i)}</button>`).join('') || '<div class="sub">All plants are well stocked.</div>'}</div>
+        <button class="btn" data-act="print-report">${ic('print','sm')} Print report</button>
       </div></div>${nav('home')}`;
   },
 
@@ -1163,6 +1198,7 @@ document.addEventListener('click', async e => {
       return go('edit/new');
     }
     case 'logo': return logoSheet();
+    case 'print-report': return printSheet();
     case 'photo': return photoSheet();
     case 'avatar-camera': case 'avatar-gallery':
       return pickPhoto(t.dataset.act === 'avatar-camera', async blob => {
@@ -1259,7 +1295,7 @@ document.addEventListener('click', async e => {
         <div class="sub">Scans match your stock by scientific name and family, so keep those filled in. Identification needs internet; your stock list works offline.</div></div>
         <button class="btn" data-act="close-sheet">Got it</button>`);
     case 'about':
-      return sheet(`<div style="display:flex;gap:14px;align-items:center"><span class="art s64" style="border-radius:50%">${plantSVG('about','Indoor','monstera')}</span><div><h2>FloraTrack</h2><div class="sub">Version 2.3</div></div></div>
+      return sheet(`<div style="display:flex;gap:14px;align-items:center"><span class="art s64" style="border-radius:50%">${plantSVG('about','Indoor','monstera')}</span><div><h2>FloraTrack</h2><div class="sub">Version 2.4</div></div></div>
         <p style="line-height:1.7;margin:0">A CNN-powered plant identification and inventory management system for small-scale plant vendors. Plant identification by the Pl@ntNet API (deep-learning image recognition). Descriptions from Wikipedia.</p><button class="btn" data-act="close-sheet">Close</button>`);
     case 'reset':
       return confirmSheet('Reset app data?', 'This deletes all plants, sales and your store profile from this phone. Save a backup first if you may need them.', 'Delete everything', () => {
@@ -1268,6 +1304,81 @@ document.addEventListener('click', async e => {
 });
 // tap outside a bottom sheet closes it
 document.addEventListener('click', e => { if (e.target.classList && e.target.classList.contains('sheet-bg')) closeSheet(); });
+
+// ---------- printable report ----------
+const fmtDateTime = t => new Date(t).toLocaleString('en-PH', {month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit'});
+const MOVE_LABEL = {sale:'Sale', new:'Initial stock', in:'Restock'};
+function printSheet(){
+  const days = {7:'Last 7 days', 30:'Last 30 days', 90:'Last 90 days'};
+  sheet(`<h2>Print report</h2>
+    <label class="f">Period<select class="input" id="p-days">${Object.entries(days).map(([v, l]) => `<option value="${v}" ${Number(v) === reportDays ? 'selected' : ''}>${l}</option>`).join('')}<option value="0">All records</option></select></label>
+    <div class="sub" style="margin-bottom:-6px">Include</div>
+    <label class="check-row"><input type="checkbox" id="p-sales" checked> Sales records</label>
+    <label class="check-row"><input type="checkbox" id="p-inv" checked> Inventory list</label>
+    <label class="check-row"><input type="checkbox" id="p-moves" checked> Restocks and new plants</label>
+    <div id="p-err"></div>
+    <button class="btn" id="p-go">${ic('print','sm')} Print / Save as PDF</button>
+    <p class="sub" style="margin:0;text-align:center">Choose your printer, or "Save as PDF" to keep a copy.</p>`);
+  $('#p-go').onclick = () => {
+    const opt = {days:Number($('#p-days').value), sales:$('#p-sales').checked, inv:$('#p-inv').checked, moves:$('#p-moves').checked};
+    if (!opt.sales && !opt.inv && !opt.moves){ $('#p-err').innerHTML = '<div class="err">Choose at least one part to print.</div>'; return; }
+    closeSheet(); printReport(opt);
+  };
+}
+function buildReport(opt){
+  const now = Date.now();
+  const from = opt.days ? startOfDay(now) - (opt.days - 1) * DAY : 0;
+  const inPeriod = S.moves.filter(m => m.at >= from).sort((a, b) => a.at - b.at);
+  const sales = inPeriod.filter(m => m.type === 'sale');
+  const others = inPeriod.filter(m => m.type !== 'sale');
+  const total = sales.reduce((a, m) => a - m.qty * m.price, 0);
+  const sold = sales.reduce((a, m) => a - m.qty, 0);
+  const items = [...S.items].sort((a, b) => a.name.localeCompare(b.name) || (a.color || '').localeCompare(b.color || ''));
+  const stockValue = items.reduce((a, i) => a + Math.max(0, i.qty) * i.price, 0);
+  const units = items.reduce((a, i) => a + Math.max(0, i.qty), 0);
+  const attention = items.filter(i => level(i) !== 'ok').length;
+  const period = opt.days ? `${fmtDate(from)} – ${fmtDate(now)}` : 'All records';
+  const logo = S.profile.logo ? `<div class="rp-logo" style="background-image:url('${S.profile.logo}')"></div>` : '';
+  const none = msg => `<div class="none">${msg}</div>`;
+  let html = `<div class="rp-head">${logo}<div><h1>${esc(S.profile.store)}</h1><div>Sales &amp; Inventory Report · ${esc(period)}</div></div>
+    <div class="meta">Printed ${esc(fmtDateTime(now))}<br>Prepared by ${esc(S.profile.owner)}</div></div>
+    <div class="rp-sum">
+      <div><small>Total sales</small><b>${peso(total)}</b></div>
+      <div><small>Plants sold</small><b>${sold}</b></div>
+      <div><small>Transactions</small><b>${sales.length}</b></div>
+      <div><small>Plants on hand</small><b>${units}</b></div>
+      <div><small>Stock value</small><b>${peso(stockValue)}</b></div>
+    </div>`;
+  if (opt.sales){
+    html += `<h2>Sales records</h2>` + (sales.length ? `<table><thead><tr><th>#</th><th>Date &amp; time</th><th>Plant</th><th class="r">Qty</th><th class="r">Unit price</th><th class="r">Amount</th></tr></thead><tbody>
+      ${sales.map((m, k) => `<tr><td>${k + 1}</td><td>${esc(fmtDateTime(m.at))}</td><td>${esc(m.name)}${m.note ? ` <span style="color:#666">(${esc(m.note)})</span>` : ''}</td><td class="r">${-m.qty}</td><td class="r">${peso(m.price)}</td><td class="r">${peso(-m.qty * m.price)}</td></tr>`).join('')}
+      </tbody><tfoot><tr><td colspan="3">Total</td><td class="r">${sold}</td><td></td><td class="r">${peso(total)}</td></tr></tfoot></table>` : none('No sales in this period.'));
+  }
+  if (opt.inv){
+    html += `<h2>Inventory list <span style="font-weight:400;font-size:9.5pt;color:#555">(${items.length} records · ${attention} need restocking)</span></h2>` + (items.length ? `<table><thead><tr><th>Plant</th><th>Color</th><th>Category</th><th class="r">In stock</th><th class="r">Price</th><th class="r">Value</th><th>Status</th></tr></thead><tbody>
+      ${items.map(i => `<tr><td>${esc(i.name)}${i.sci ? `<div style="font-style:italic;color:#666;font-size:8.5pt">${esc(i.sci)}</div>` : ''}</td><td>${esc(i.color || '—')}</td><td>${esc(i.category)}</td><td class="r">${i.qty}</td><td class="r">${peso(i.price)}</td><td class="r">${peso(Math.max(0, i.qty) * i.price)}</td><td>${LEVEL[level(i)][1]}</td></tr>`).join('')}
+      </tbody><tfoot><tr><td colspan="3">Total</td><td class="r">${units}</td><td></td><td class="r">${peso(stockValue)}</td><td></td></tr></tfoot></table>` : none('No plants in the inventory.'));
+  }
+  if (opt.moves){
+    html += `<h2>Restocks and new plants</h2>` + (others.length ? `<table><thead><tr><th>Date &amp; time</th><th>Plant</th><th>Type</th><th class="r">Qty added</th><th>Note</th></tr></thead><tbody>
+      ${others.map(m => `<tr><td>${esc(fmtDateTime(m.at))}</td><td>${esc(m.name)}</td><td>${MOVE_LABEL[m.type] || esc(m.type)}</td><td class="r">+${m.qty}</td><td>${esc(m.note || '')}</td></tr>`).join('')}
+      </tbody></table>` : none('No restocks in this period.'));
+  }
+  html += `<div class="rp-sign"><div>Prepared by: ${esc(S.profile.owner)}</div><div>Checked by:</div><div>Date:</div></div>
+    <div class="rp-foot">Generated by FloraTrack · CNN-Powered Plant Identification and Inventory Management System</div>`;
+  return html;
+}
+function printReport(opt){
+  $('#print-area').innerHTML = buildReport(opt);
+  const title = `FloraTrack report ${new Date().toISOString().slice(0, 10)}`;
+  if (window.AndroidBridge){
+    if (typeof AndroidBridge.printPage === 'function') AndroidBridge.printPage(title);
+    else toast('To print from the app, install the latest FloraTrack Android app.');
+    return;
+  }
+  const old = document.title; document.title = title;      // becomes the PDF file name
+  setTimeout(() => { window.print(); document.title = old; }, 60);
+}
 
 // ---------- store logo ----------
 function logoSheet(){
